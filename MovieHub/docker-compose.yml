@@ -1,0 +1,31 @@
+﻿services:
+  postgres:
+    image: postgres:16
+    container_name: MovieHubApi-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: movieHubDB
+    ports:
+      - "5438:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  api:
+    build:
+      context: ..          # <-- contexto na pasta raiz (MovieHub/)
+      dockerfile: MovieHub/Dockerfile  # <-- Dockerfile dentro do projeto
+    container_name: MovieHubApi-Api
+    depends_on:
+      - postgres
+    ports:
+      - "5000:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_HTTP_PORTS=8080
+      - ASPNETCORE_URLS=http://+:8080
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=movieHubDB;Username=postgres;Password=admin
+
+volumes:
+  postgres_data:
