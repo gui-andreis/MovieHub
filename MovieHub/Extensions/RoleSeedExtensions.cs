@@ -1,9 +1,9 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using MovieHub.Models;
 
-namespace MovieHub.Extension;
+namespace MovieHub.Extensions;
 
-public static class RoleSeedExtension
+public static class RoleSeedExtensions
 {
     // Cria as roles e o primeiro admin automaticamente quando a app sobe
     public static async Task SeedRolesAndAdminAsync(this WebApplication app)

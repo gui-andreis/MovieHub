@@ -1,6 +1,6 @@
 ﻿namespace MovieHub.Data.Dtos.Favorite;
 
-public class FavoriteReponseDto
+public class FavoriteResponseDto
 {
     public int MovieId { get; set; }
 

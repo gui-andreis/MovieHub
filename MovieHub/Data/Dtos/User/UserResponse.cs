@@ -1,8 +1,7 @@
 ﻿namespace MovieHub.Data.Dtos.User;
 
 
-
-// só se for retornar dados pro user, talvez fique legal se colocar dos favoritos e tal
+//Fora de Funcionamento, Será implementado no futuro, onde o usuário poderá ver seus dados 
 public class UserResponseDto
 {
     public string Id { get; set; } = string.Empty;

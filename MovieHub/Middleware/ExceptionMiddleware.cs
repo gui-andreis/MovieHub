@@ -1,16 +1,13 @@
 ﻿using System.Net;
 using System.Text.Json;
-
+using MovieHub.Exceptions;
 namespace MovieHub.Middleware;
 
-// Essa classe É o middleware
-// Ela precisa ter exatamente esse formato pro ASP.NET reconhecer
+// Middleware responsável por capturar exceptions globais
 public class ExceptionMiddleware
 {
-    // RequestDelegate representa o "próximo passo" no pipeline
-    // ou seja, o próximo middleware ou o controller
-    private readonly RequestDelegate _next;
-    private readonly ILogger<ExceptionMiddleware> _logger;
+    private readonly RequestDelegate _next; // Próximo middleware no pipeline
+    private readonly ILogger<ExceptionMiddleware> _logger; // Logger para registrar erros
 
     public ExceptionMiddleware(RequestDelegate next, ILogger<ExceptionMiddleware> logger)
     {
@@ -18,51 +15,40 @@ public class ExceptionMiddleware
         _logger = logger;
     }
 
-    // InvokeAsync é chamado automaticamente pelo ASP.NET em toda requisição
-    // HttpContext tem tudo sobre a requisição atual (headers, body, user, etc)
+    // Executado automaticamente a cada requisição HTTP
     public async Task InvokeAsync(HttpContext context)
     {
         try
         {
-            // Chama o próximo passo no pipeline (controller, outro middleware, etc)
-            // Se nenhuma exception for lançada, a requisição segue normal
-            await _next(context);
+            await _next(context);// Executa o próximo middleware ou controller
         }
         catch (Exception ex)
         {
-            // Se qualquer exception for lançada em QUALQUER lugar da aplicação
-            // ela cai aqui — o middleware captura antes de chegar no usuário
-            _logger.LogError(ex, "Erro não tratado: {Message}", ex.Message);
-            await HandleExceptionAsync(context, ex);
+            _logger.LogError(ex, "Erro não tratado: {Message}", ex.Message); // Registra erro no log
+            await HandleExceptionAsync(context, ex); // Trata e padroniza resposta de erro
         }
     }
 
     private static async Task HandleExceptionAsync(HttpContext context, Exception exception)
     {
-        // Define o status HTTP e a mensagem baseado no tipo da exception
+        // Define status HTTP baseado no tipo da exception
         var (statusCode, message) = exception switch
         {
-            // Exception que você já usa no ReviewService e FavoriteService
-            UnauthorizedAccessException => (HttpStatusCode.Forbidden, exception.Message),
-
-            // Exception genérica que você usa pra "Filme não encontrado", etc
-            Exception e when e.Message.Contains("não encontrado")
-                => (HttpStatusCode.NotFound, exception.Message),
-
-            // Qualquer outra exception vira 500
+            NotFoundException => (HttpStatusCode.NotFound, exception.Message),
+            BadRequestException => (HttpStatusCode.BadRequest, exception.Message),
+            ForbiddenException => (HttpStatusCode.Forbidden, exception.Message),
             _ => (HttpStatusCode.InternalServerError, "Ocorreu um erro interno no servidor.")
         };
 
         context.Response.ContentType = "application/json";
         context.Response.StatusCode = (int)statusCode;
 
-        // Resposta padronizada em JSON
         var response = new
         {
             status = (int)statusCode,
             message
         };
 
-        await context.Response.WriteAsync(JsonSerializer.Serialize(response));
+        await context.Response.WriteAsync(JsonSerializer.Serialize(response)); // Retorna JSON padronizado
     }
 }

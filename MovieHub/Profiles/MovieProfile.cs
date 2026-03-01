@@ -8,20 +8,17 @@ public class MovieProfile : Profile
 {
     public MovieProfile()
     {
-        // Create
+        // DTO -> Entity (Create)
         CreateMap<CreateMovieDto, Movie>();
 
-        // Update
+        // DTO -> Entity (Update)
         CreateMap<UpdateMovieDto, Movie>();
 
-        // Response
-        // Response
+        // Entity -> DTO (Response)
         CreateMap<Movie, MovieResponseDto>()
             .ForMember(dest => dest.AverageRating,
                 opt => opt.MapFrom(src => src.Reviews.Any()
                     ? src.Reviews.Average(r => r.Rating)
                     : 0));
-
-        //patch movie pro update
     }
 }
