@@ -2,7 +2,6 @@
 
 using MovieHub.Data.Dtos.Movie;
 using MovieHub.Queries.Movies;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using MovieHub.Pagination;
 
