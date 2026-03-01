@@ -2,6 +2,7 @@
 
 using Microsoft.AspNetCore.Mvc;
 using MovieHub.Data.Dtos.Movie;
+using MovieHub.Queries.Movies;
 using MovieHub.Services.Interfaces;
 
 [ApiController]
@@ -16,10 +17,10 @@ public class MoviesController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetAll()
+    public async Task<IActionResult> GetAll([FromQuery] MovieQueryParameters parameters)
     {
-        var movies = await _service.GetAllAsync();
-        return Ok(movies);
+        var result = await _service.GetAllAsync(parameters);
+        return Ok(result);
     }
 
     [HttpGet("{id}")]
@@ -36,7 +37,7 @@ public class MoviesController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create(CreateMovieDto dto)
     {
-        var result = await _service.CreateAsync(dto);
+        var result = await _service.CreateAsync(dto);// Bota o Async no final depois do nome da classe
         return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
     }
 

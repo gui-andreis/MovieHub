@@ -1,52 +1,35 @@
-﻿namespace MovieHub.Services.Interfaces;
-
+﻿using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using MovieHub.Data;
 using MovieHub.Data.Dtos.Movie;
 using MovieHub.Models;
+using MovieHub.Queries.Movies;
+using MovieHub.Services.Interfaces;
+using MovieHub.Pagination;
 
+
+namespace MovieHub.Services.Implementos;
 public class MovieService : IMovieService
 {
     private readonly ApplicationDbContext _context;
+    private readonly IMapper _mapper;
 
-    public MovieService(ApplicationDbContext context)
+    public MovieService(ApplicationDbContext context, IMapper mapper)
     {
         _context = context;
+        _mapper = mapper;
     }
 
     public async Task<MovieResponseDto> CreateAsync(CreateMovieDto dto)
     {
-        var movie = new Movie
-        {
-            Title = dto.Title,
-            Description = dto.Description,
-            ReleaseYear = dto.ReleaseYear
-        };
+        var movie = _mapper.Map<Movie>(dto);
 
         _context.Movies.Add(movie);
         await _context.SaveChangesAsync();
 
-        return new MovieResponseDto
-        {
-            Id = movie.Id,
-            Title = movie.Title,
-            Description = movie.Description,
-            ReleaseYear = movie.ReleaseYear
-        };
+        return _mapper.Map<MovieResponseDto>(movie);
     }
 
-    public async Task<IEnumerable<MovieResponseDto>> GetAllAsync()
-    {
-        return await _context.Movies
-            .Select(m => new MovieResponseDto
-            {
-                Id = m.Id,
-                Title = m.Title,
-                Description = m.Description,
-                ReleaseYear = m.ReleaseYear
-            })
-            .ToListAsync();
-    }
 
     public async Task<MovieResponseDto?> GetByIdAsync(int id)
     {
@@ -55,13 +38,7 @@ public class MovieService : IMovieService
         if (movie == null)
             return null;
 
-        return new MovieResponseDto
-        {
-            Id = movie.Id,
-            Title = movie.Title,
-            Description = movie.Description,
-            ReleaseYear = movie.ReleaseYear
-        };
+        return _mapper.Map<MovieResponseDto>(movie);
     }
 
     public async Task<bool> UpdateAsync(int id, UpdateMovieDto dto)
@@ -71,9 +48,7 @@ public class MovieService : IMovieService
         if (movie == null)
             return false;
 
-        movie.Title = dto.Title;
-        movie.Description = dto.Description;
-        movie.ReleaseYear = dto.ReleaseYear;
+        _mapper.Map(dto, movie);
 
         await _context.SaveChangesAsync();
         return true;
@@ -89,5 +64,29 @@ public class MovieService : IMovieService
         _context.Movies.Remove(movie);
         await _context.SaveChangesAsync();
         return true;
+    }
+    public async Task<PagedResult<MovieResponseDto>> GetAllAsync(MovieQueryParameters parameters)
+    {
+        var query = _context.Movies.AsQueryable();
+
+        var totalCount = await query.CountAsync();
+
+        var movies = await query
+            .Skip((parameters.PageNumber - 1) * parameters.PageSize)
+            .Take(parameters.PageSize)
+            .ToListAsync();
+
+        var totalPages = (int)Math.Ceiling(totalCount / (double)parameters.PageSize);
+
+        var movieDtos = _mapper.Map<List<MovieResponseDto>>(movies);
+
+        return new PagedResult<MovieResponseDto>
+        {
+            Data = movieDtos,
+            CurrentPage = parameters.PageNumber,
+            PageSize = parameters.PageSize,
+            TotalCount = totalCount,
+            TotalPages = totalPages
+        };
     }
 }

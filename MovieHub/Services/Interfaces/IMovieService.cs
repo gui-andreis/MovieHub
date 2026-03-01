@@ -1,14 +1,17 @@
 ﻿namespace MovieHub.Services.Interfaces;
 
 using MovieHub.Data.Dtos.Movie;
+using MovieHub.Queries.Movies;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using MovieHub.Pagination;
+
 
 public interface IMovieService
 {
     Task<MovieResponseDto> CreateAsync(CreateMovieDto dto);
 
-    Task<IEnumerable<MovieResponseDto>> GetAllAsync();
+    Task<PagedResult<MovieResponseDto>> GetAllAsync(MovieQueryParameters parameters);
 
     Task<MovieResponseDto?> GetByIdAsync(int id);
 

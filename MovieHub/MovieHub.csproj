@@ -26,7 +26,6 @@
     <Folder Include="Middleware\" />
     <Folder Include="Helpers\" />
     <Folder Include="Extension\" />
-    <Folder Include="Profiles\" />
   </ItemGroup>
 
 </Project>

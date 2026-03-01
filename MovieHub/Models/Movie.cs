@@ -2,7 +2,7 @@
 
 public class Movie
 {
-    public int Id { get; set; } // não precisa passar como 
+    public int Id { get; set; } // não precisa passar em nenhum lugar ja define como serial key 
 
     public string Title { get; set; } = string.Empty;
 
