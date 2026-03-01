@@ -15,7 +15,12 @@ public class MovieProfile : Profile
         CreateMap<UpdateMovieDto, Movie>();
 
         // Response
-        CreateMap<Movie, MovieResponseDto>();
+        // Response
+        CreateMap<Movie, MovieResponseDto>()
+            .ForMember(dest => dest.AverageRating,
+                opt => opt.MapFrom(src => src.Reviews.Any()
+                    ? src.Reviews.Average(r => r.Rating)
+                    : 0));
 
         //patch movie pro update
     }

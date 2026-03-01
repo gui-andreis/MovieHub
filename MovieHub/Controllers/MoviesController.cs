@@ -1,5 +1,6 @@
 ﻿namespace MovieHub.Controllers;
 
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MovieHub.Data.Dtos.Movie;
 using MovieHub.Queries.Movies;
@@ -16,6 +17,7 @@ public class MoviesController : ControllerBase
         _service = service;
     }
 
+    // Qualquer um pode ver filmes
     [HttpGet]
     public async Task<IActionResult> GetAll([FromQuery] MovieQueryParameters parameters)
     {
@@ -27,20 +29,21 @@ public class MoviesController : ControllerBase
     public async Task<IActionResult> GetById(int id)
     {
         var movie = await _service.GetByIdAsync(id);
-
         if (movie == null)
             return NotFound();
-
         return Ok(movie);
     }
 
+    // Só Admin pode criar, editar e deletar filmes
+    [Authorize(Roles = "Admin")]
     [HttpPost]
     public async Task<IActionResult> Create(CreateMovieDto dto)
     {
-        var result = await _service.CreateAsync(dto);// Bota o Async no final depois do nome da classe
+        var result = await _service.CreateAsync(dto);
         return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
     }
 
+    [Authorize(Roles = "Admin")]
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(int id, UpdateMovieDto dto)
     {
@@ -48,18 +51,16 @@ public class MoviesController : ControllerBase
 
         if (!success)
             return NotFound();
-
         return NoContent();
     }
 
+    [Authorize(Roles = "Admin")]
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id)
     {
         var success = await _service.DeleteAsync(id);
-
         if (!success)
             return NotFound();
-
         return NoContent();
     }
 }

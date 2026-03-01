@@ -11,14 +11,20 @@
       - "5438:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   api:
     build:
-      context: ..          # <-- contexto na pasta raiz (MovieHub/)
-      dockerfile: MovieHub/Dockerfile  # <-- Dockerfile dentro do projeto
+      context: ..
+      dockerfile: MovieHub/Dockerfile
     container_name: MovieHubApi-Api
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy  # <-- espera o postgres estar PRONTO
     ports:
       - "5000:8080"
     environment:

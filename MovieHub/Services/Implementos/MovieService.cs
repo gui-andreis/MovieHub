@@ -33,11 +33,11 @@ public class MovieService : IMovieService
 
     public async Task<MovieResponseDto?> GetByIdAsync(int id)
     {
-        var movie = await _context.Movies.FindAsync(id);
-
+        var movie = await _context.Movies
+            .Include(m => m.Reviews)  // <-- carrega as reviews
+            .FirstOrDefaultAsync(m => m.Id == id);
         if (movie == null)
             return null;
-
         return _mapper.Map<MovieResponseDto>(movie);
     }
 
@@ -72,6 +72,7 @@ public class MovieService : IMovieService
         var totalCount = await query.CountAsync();
 
         var movies = await query
+            .Include(m => m.Reviews)
             .Skip((parameters.PageNumber - 1) * parameters.PageSize)
             .Take(parameters.PageSize)
             .ToListAsync();
