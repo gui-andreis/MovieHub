@@ -32,6 +32,7 @@ if (app.Environment.IsDevelopment())
 await app.SeedRolesAndAdminAsync();
 
 app.UseAppMiddlewares();
+app.UseStaticFiles();
 
 app.UseHttpsRedirection();
 app.UseAuthentication();

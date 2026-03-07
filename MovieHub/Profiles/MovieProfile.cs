@@ -12,13 +12,18 @@ public class MovieProfile : Profile
         CreateMap<CreateMovieDto, Movie>();
 
         // DTO -> Entity (Update)
-        CreateMap<UpdateMovieDto, Movie>();
+        CreateMap<UpdateMovieDto, Movie>()
+            .ForMember(dest => dest.Id, opt => opt.Ignore());
 
         // Entity -> DTO (Response)
         CreateMap<Movie, MovieResponseDto>()
             .ForMember(dest => dest.AverageRating,
                 opt => opt.MapFrom(src => src.Reviews.Any()
                     ? src.Reviews.Average(r => r.Rating)
-                    : 0));
+                    : 0))
+            .ForMember(dest => dest.Genres,
+                opt => opt.MapFrom(src => src.MovieGenres
+                    .Select(mg => mg.Genre.Name)
+                    .ToList()));
     }
 }

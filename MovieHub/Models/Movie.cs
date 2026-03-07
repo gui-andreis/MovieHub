@@ -21,6 +21,10 @@ public class Movie
     // Relacionamento 1:N com Reviews
     public ICollection<Review> Reviews { get; set; } = new List<Review>();
 
+    // Caminho da imagem do filme (opcional)
+    public string? ImagePath { get; set; }
+
     // Relacionamento N:N com usuários via entidade Favorite
     public ICollection<Favorite> Favorites { get; set; } = new List<Favorite>();
+    public ICollection<MovieGenre> MovieGenres { get; set; } = new List<MovieGenre>();
 }

@@ -2,10 +2,11 @@
 using Microsoft.EntityFrameworkCore;
 using MovieHub.Data;
 using MovieHub.Data.Dtos.Movie;
+using MovieHub.Exceptions;
 using MovieHub.Models;
+using MovieHub.Pagination;
 using MovieHub.Queries.Movies;
 using MovieHub.Services.Interfaces;
-using MovieHub.Pagination;
 
 namespace MovieHub.Services.Implementations;
 
@@ -13,85 +14,147 @@ public class MovieService : IMovieService
 {
     private readonly ApplicationDbContext _context;
     private readonly IMapper _mapper;
+    private readonly IImageService _imageService;
 
-	// Injeção de dependências do DbContext e AutoMapper
-	public MovieService(ApplicationDbContext context, IMapper mapper)
+    public MovieService(ApplicationDbContext context, IMapper mapper, IImageService imageService)
     {
         _context = context;
         _mapper = mapper;
+        _imageService = imageService;
     }
 
-	// Cria um novo filme no banco de dados
-	public async Task<MovieResponseDto> CreateAsync(CreateMovieDto dto)
+    // Cria um novo filme no banco de dados
+    public async Task<MovieResponseDto> CreateAsync(CreateMovieDto dto, CancellationToken cancellationToken = default)
     {
-        var movie = _mapper.Map<Movie>(dto); // Mapeia DTO para entidade 
+        var movie = _mapper.Map<Movie>(dto);
+        movie.ImagePath = await _imageService.SaveImageAsync(dto.Image);
 
-		_context.Movies.Add(movie);
-        await _context.SaveChangesAsync();
+        if (dto.GenreIds.Any())
+        {
+            var genres = await _context.Genres
+                .Where(g => dto.GenreIds.Contains(g.Id))
+                .ToListAsync();
+            movie.MovieGenres = genres
+                .Select(g => new MovieGenre { Genre = g })
+                .ToList();
+        }
 
-        return _mapper.Map<MovieResponseDto>(movie); // Retorna DTO de resposta
-	}
+        _context.Movies.Add(movie);
+        await _context.SaveChangesAsync(cancellationToken);
 
-	// Busca filme por Id incluindo suas reviews
-	public async Task<MovieResponseDto?> GetByIdAsync(int id)
+        await _context.Entry(movie)
+            .Collection(m => m.MovieGenres)
+            .Query()
+            .Include(mg => mg.Genre)
+            .LoadAsync();
+
+        return _mapper.Map<MovieResponseDto>(movie);
+    }
+
+    // Busca filme por Id incluindo suas reviews
+    public async Task<MovieResponseDto> GetByIdAsync(int id, CancellationToken cancellationToken = default)
     {
         var movie = await _context.Movies
-            .Include(m => m.Reviews)  // Carrega relacionamento de avaliações
-			.FirstOrDefaultAsync(m => m.Id == id);
-        if (movie == null)
-            return null; // Retorna null caso não encontre
+            .Include(m => m.Reviews)
+            .Include(m => m.MovieGenres)
+                .ThenInclude(mg => mg.Genre)
+            .FirstOrDefaultAsync(m => m.Id == id, cancellationToken)
+            ?? throw new NotFoundException($"Filme com id {id} não encontrado.");
 
-		return _mapper.Map<MovieResponseDto>(movie); // Converte para DTO
-	}
+        return _mapper.Map<MovieResponseDto>(movie);
+    }
 
-	// Atualiza dados de um filme existente
-	public async Task<bool> UpdateAsync(int id, UpdateMovieDto dto)
+    // Atualiza dados de um filme existente
+    public async Task UpdateAsync(int id, UpdateMovieDto dto, CancellationToken cancellationToken = default)
     {
-        var movie = await _context.Movies.FindAsync(id);
+        var movie = await _context.Movies
+            .Include(m => m.MovieGenres)
+            .FirstOrDefaultAsync(m => m.Id == id, cancellationToken)
+            ?? throw new NotFoundException($"Filme com id {id} não encontrado.");
 
-        if (movie == null)
-            return false;
+        if (dto.Image != null)
+        {
+            _imageService.DeleteImage(movie.ImagePath);
+            movie.ImagePath = await _imageService.SaveImageAsync(dto.Image);
+        }
+
+        // Substitui gêneros se foram enviados
+        if (dto.GenreIds.Any())
+        {
+            var genres = await _context.Genres
+                .Where(g => dto.GenreIds.Contains(g.Id))
+                .ToListAsync();
+            movie.MovieGenres = genres
+                .Select(g => new MovieGenre { MovieId = id, GenreId = g.Id })
+                .ToList();
+        }
 
         _mapper.Map(dto, movie);
-
-        await _context.SaveChangesAsync();
-        return true;
+        await _context.SaveChangesAsync(cancellationToken);
     }
 
-	// Remove um filme do banco
-	public async Task<bool> DeleteAsync(int id)
+
+    // Remove um filme do banco
+    public async Task DeleteAsync(int id, CancellationToken cancellationToken = default)
     {
-        var movie = await _context.Movies.FindAsync(id);
+        var movie = await _context.Movies.FindAsync([id], cancellationToken)
+            ?? throw new NotFoundException($"Filme com id {id} não encontrado.");
 
-        if (movie == null)
-            return false;
-
+        // Remove a imagem do disco junto com o filme
+        _imageService.DeleteImage(movie.ImagePath);
         _context.Movies.Remove(movie);
-        await _context.SaveChangesAsync();
-
-        return true;
+        await _context.SaveChangesAsync(cancellationToken);
     }
 
-	// Retorna lista paginada de filmes
-	public async Task<PagedResult<MovieResponseDto>> GetAllAsync(MovieQueryParameters parameters)
+    // Retorna lista paginada de filmes
+    public async Task<PagedResult<MovieResponseDto>> GetAllAsync(MovieQueryParameters parameters, CancellationToken cancellationToken = default)
     {
-        var query = _context.Movies.AsQueryable();
+        var query = _context.Movies
+            .Include(m => m.Reviews)
+            .Include(m => m.MovieGenres)
+                .ThenInclude(mg => mg.Genre)
+            .AsQueryable();
 
-        var totalCount = await query.CountAsync(); // Total de registros antes da paginação
+        // Filtros
+        if (!string.IsNullOrWhiteSpace(parameters.Title))
+            query = query.Where(m => m.Title.ToLower().Contains(parameters.Title.ToLower()));
 
-		var movies = await query
-            .Include(m => m.Reviews) // Carrega avaliações para cada filme
-			.Skip((parameters.PageNumber - 1) * parameters.PageSize) // Pula registros anteriores
-			.Take(parameters.PageSize) // Limita quantidade por página
-			.ToListAsync();
+        if (parameters.ReleaseYear.HasValue)
+            query = query.Where(m => m.ReleaseYear == parameters.ReleaseYear.Value);
 
-        var totalPages = (int)Math.Ceiling(totalCount / (double)parameters.PageSize); // Calcula total de páginas
+        if (parameters.GenreIds != null && parameters.GenreIds.Any())
+            query = query.Where(m => parameters.GenreIds
+                .All(id => m.MovieGenres.Any(mg => mg.GenreId == id)));
 
-		var movieDtos = _mapper.Map<List<MovieResponseDto>>(movies);// Converte lista para DTO
+        if (parameters.MinRating.HasValue)
+            query = query.Where(m => m.Reviews.Any() &&
+                m.Reviews.Average(r => r.Rating) >= parameters.MinRating.Value);
 
-		return new PagedResult<MovieResponseDto>
+        if (parameters.MaxRating.HasValue)
+            query = query.Where(m => m.Reviews.Any() &&
+                m.Reviews.Average(r => r.Rating) <= parameters.MaxRating.Value);
+
+        // Ordenação
+        query = parameters.OrderBy?.ToLower() switch
         {
-            Data = movieDtos,
+            "title" => query.OrderBy(m => m.Title),
+            "title_desc" => query.OrderByDescending(m => m.Title),
+            "year" => query.OrderBy(m => m.ReleaseYear),
+            "year_desc" => query.OrderByDescending(m => m.ReleaseYear),
+            _ => query.OrderBy(m => m.Id)
+        };
+
+        var totalCount = await query.CountAsync(cancellationToken);
+        var totalPages = (int)Math.Ceiling(totalCount / (double)parameters.PageSize);
+
+        var movies = await query
+            .Skip((parameters.PageNumber - 1) * parameters.PageSize)
+            .Take(parameters.PageSize)
+            .ToListAsync(cancellationToken);
+
+        return new PagedResult<MovieResponseDto>
+        {
+            Data = _mapper.Map<List<MovieResponseDto>>(movies),
             CurrentPage = parameters.PageNumber,
             PageSize = parameters.PageSize,
             TotalCount = totalCount,

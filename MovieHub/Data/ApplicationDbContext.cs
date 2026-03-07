@@ -15,7 +15,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<Movie> Movies => Set<Movie>();
     public DbSet<Review> Reviews => Set<Review>();
     public DbSet<Favorite> Favorites => Set<Favorite>();
-
+    public DbSet<Genre> Genres => Set<Genre>();
+    public DbSet<MovieGenre> MovieGenres => Set<MovieGenre>();
 
     // Configuração de relacionamentos e chaves
     protected override void OnModelCreating(ModelBuilder builder)
@@ -49,6 +50,22 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             .HasOne(f => f.User)
             .WithMany()
             .HasForeignKey(f => f.UserId);
+
+        // Chave composta para MovieGenre (MovieId + GenreId)
+        builder.Entity<MovieGenre>()
+            .HasKey(mg => new { mg.MovieId, mg.GenreId });
+
+        // MovieGenre -> Movie
+        builder.Entity<MovieGenre>()
+            .HasOne(mg => mg.Movie)
+            .WithMany(m => m.MovieGenres)
+            .HasForeignKey(mg => mg.MovieId);
+
+        // MovieGenre -> Genre
+        builder.Entity<MovieGenre>()
+            .HasOne(mg => mg.Genre)
+            .WithMany(g => g.MovieGenres)
+            .HasForeignKey(mg => mg.GenreId);
     }
 }
 

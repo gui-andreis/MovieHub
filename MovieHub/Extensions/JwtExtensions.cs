@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using MovieHub.Services.Interfaces;
 using System.Text;
 
 namespace MovieHub.Extensions;
@@ -28,7 +29,20 @@ public static class JwtExtensions
                 IssuerSigningKey = new SymmetricSecurityKey(
                     Encoding.UTF8.GetBytes(jwtSettings["SecretKey"]!)
                 ),
-            ClockSkew = TimeSpan.Zero
+                ClockSkew = TimeSpan.Zero
+            };
+            options.Events = new JwtBearerEvents
+            {
+                OnTokenValidated = async context =>
+                {
+                    var blacklist = context.HttpContext.RequestServices // revisar BLACKLIST
+                        .GetRequiredService<ITokenBlacklistService>();
+
+                    var jti = context.Principal?.FindFirst("jti")?.Value;
+
+                    if (jti != null && await blacklist.IsTokenBlacklistedAsync(jti))
+                        context.Fail("Token invalidado.");
+                }
             };
         });
 

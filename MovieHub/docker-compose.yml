@@ -17,6 +17,18 @@
       timeout: 5s
       retries: 5
 
+  redis:
+    image: redis:7-alpine
+    container_name: MovieHubApi-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   api:
     build:
       context: ..
@@ -24,14 +36,19 @@
     container_name: MovieHubApi-Api
     depends_on:
       postgres:
-        condition: service_healthy  # <-- espera o postgres estar PRONTO
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     ports:
       - "5000:8080"
     environment:
+      - images_data:/app/wwwroot/images
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_HTTP_PORTS=8080
       - ASPNETCORE_URLS=http://+:8080
       - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=movieHubDB;Username=postgres;Password=admin
+      - ConnectionStrings__Redis=redis:6379
 
 volumes:
   postgres_data:
+  images_data:

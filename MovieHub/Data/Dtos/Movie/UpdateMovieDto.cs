@@ -17,4 +17,8 @@ public class UpdateMovieDto
 
     [Range(1900, 2100)]
     public int ReleaseYear { get; set; }
+
+    public IFormFile? Image { get; set; }
+
+    public List<int> GenreIds { get; set; } = new();
 }

@@ -20,77 +20,73 @@ public class ReviewService : IReviewService
         _mapper = mapper;
     }
 
-	// Cria uma nova review para um filme
-	public async Task CreateAsync(CreateReviewDto dto, string userId)
+    // Cria uma nova review para um filme
+    public async Task CreateAsync(CreateReviewDto dto, string userId, CancellationToken cancellationToken = default)
     {
         var movieExists = await _context.Movies
-            .AnyAsync(m => m.Id == dto.MovieId); // Verifica se o filme existe
+            .AnyAsync(m => m.Id == dto.MovieId, cancellationToken);
+        if (!movieExists)
+            throw new NotFoundException("Filme não encontrado.");
 
-		if (!movieExists)
-            throw new NotFoundException("Filme não encontrado."); ; 
+        var alreadyReviewed = await _context.Reviews
+            .AnyAsync(r => r.MovieId == dto.MovieId && r.UserId == userId, cancellationToken);
+        if (alreadyReviewed)
+            throw new ConflictException("Você já avaliou este filme.");
 
         var review = _mapper.Map<Review>(dto); // Converte DTO para entidade
 		review.UserId = userId; // Associa review ao usuário autenticado 
 		review.CreatedAt = DateTime.UtcNow; // Define data de criação em UTC
 
 		_context.Reviews.Add(review);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(cancellationToken);
     }
 
-	// Retorna todas as reviews de um filme específico
-	public async Task<IEnumerable<ReviewResponseDto>> GetAllByMovieAsync(int movieId)
+    // Retorna todas as reviews de um filme específico
+    public async Task<IEnumerable<ReviewResponseDto>> GetAllByMovieAsync(int movieId, CancellationToken cancellationToken = default)
     {
         var reviews = await _context.Reviews
-            .Include(r => r.User) // Carrega dados do usuário que escreveu a review
-			.Where(r => r.MovieId == movieId)
-            .ToListAsync();
+            .Include(r => r.User)
+            .Where(r => r.MovieId == movieId)
+            .ToListAsync(cancellationToken);
 
         return _mapper.Map<IEnumerable<ReviewResponseDto>>(reviews); // Converte para DTO
 	}
 
-	// Retorna todas as reviews do usuário autenticado
-	public async Task<IEnumerable<ReviewResponseDto>> GetMyReviewsAsync(string userId)
+    // Retorna todas as reviews do usuário autenticado
+    public async Task<IEnumerable<ReviewResponseDto>> GetMyReviewsAsync(string userId, CancellationToken cancellationToken = default)
     {
         var reviews = await _context.Reviews
-            .Include(r => r.User) // Inclui dados do usuário (caso necessário na resposta)
-			.Where(r => r.UserId == userId)
-            .ToListAsync();
+            .Include(r => r.User)
+            .Where(r => r.UserId == userId)
+            .ToListAsync(cancellationToken);
 
         return _mapper.Map<IEnumerable<ReviewResponseDto>>(reviews); // Converte para DTO
 	}
 
-	// Atualiza uma review existent
-	public async Task<bool> UpdateAsync(int id, UpdateReviewDto dto, string userId)
+    // Atualiza uma review existent
+    public async Task UpdateAsync(int id, UpdateReviewDto dto, string userId, CancellationToken cancellationToken = default)
     {
-        var review = await _context.Reviews.FindAsync(id);
-        if (review == null)
-            return false;
+        var review = await _context.Reviews.FindAsync([id], cancellationToken)
+            ?? throw new NotFoundException($"Review com id {id} não encontrada.");
 
         if (review.UserId != userId)
-			throw new ForbiddenException("Você não pode editar a review de outro usuário."); // Impede usuário de editar review de outro 
+            throw new ForbiddenException("Você não pode editar a review de outro usuário.");
 
-		_mapper.Map(dto, review); // Atualiza propriedades da entidade
-
-		await _context.SaveChangesAsync();
-
-        return true;
+        _mapper.Map(dto, review);
+        await _context.SaveChangesAsync(cancellationToken);
     }
 
-	// Remove uma review (admin pode remover qualquer uma)
-	public async Task<bool> DeleteAsync(int id, string userId, bool isAdmin)
+    // Remove uma review (admin pode remover qualquer uma)
+    public async Task DeleteAsync(int id, string userId, bool isAdmin, CancellationToken cancellationToken = default)
     {
-        var review = await _context.Reviews.FindAsync(id);
-        if (review == null)
-            return false;
+        var review = await _context.Reviews.FindAsync([id], cancellationToken)
+            ?? throw new NotFoundException($"Review com id {id} não encontrada.");
 
-		// Admin pode deletar qualquer review, já usuário comum apenas a própria
-		if (!isAdmin && review.UserId != userId)
+        if (!isAdmin && review.UserId != userId)
             throw new ForbiddenException("Você não pode deletar a review de outro usuário.");
 
         _context.Reviews.Remove(review);
-        await _context.SaveChangesAsync();// Confirma exclusão
-
-		return true;
+        await _context.SaveChangesAsync(cancellationToken);
     }
 
 }

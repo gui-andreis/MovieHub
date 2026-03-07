@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using MovieHub.Data.Dtos.Auth;
 using MovieHub.Services.Interfaces;
 
@@ -6,7 +7,7 @@ namespace MovieHub.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class AuthController : ControllerBase
+public class AuthController : AppControllerBase
 {
     private readonly IAuthService _authService;
 
@@ -21,11 +22,7 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> Register(RegisterDto dto)
     {
         var result = await _authService.RegisterAsync(dto);
-
-        if (result == null)
-            return BadRequest("Erro ao registrar usuário.");
-
-        return Ok(result);
+        return Ok(result, "Usuário registrado com sucesso.");
     }
 
     // Endpoint responsável pela autenticação do usuário
@@ -34,11 +31,16 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> Login(LoginDto dto)
     {
         var result = await _authService.LoginAsync(dto);
+        return Ok(result, "Login realizado com sucesso.");
+    }
 
-        // Retorna 401 quando credenciais são inválidas
-        if (result == null)
-            return Unauthorized("Email ou senha inválidos.");
-
-        return Ok(result);
+    [Authorize]
+    [HttpPost("logout")]
+    public async Task<IActionResult> Logout()
+    {
+        // Extrai o token cru do header Authorization (remove o prefixo "Bearer ")
+        var token = Request.Headers["Authorization"].ToString().Replace("Bearer ", "");
+        await _authService.LogoutAsync(token);
+        return NoContent("Logout realizado com sucesso.");
     }
 }

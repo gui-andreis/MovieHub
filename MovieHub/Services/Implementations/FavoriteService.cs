@@ -18,18 +18,17 @@ public class FavoriteService : IFavoriteService
     }
 
     // Adiciona um filme à lista de favoritos do usuário
-    public async Task AddAsync(int movieId, string userId)
+    public async Task AddAsync(int movieId, string userId, CancellationToken cancellationToken = default)
     {
-        // Valida se o filme realmente existe antes de favoritar
-        var movieExists = await _context.Movies.AnyAsync(m => m.Id == movieId);
+        var movieExists = await _context.Movies.AnyAsync(m => m.Id == movieId, cancellationToken);
         if (!movieExists)
             throw new NotFoundException("Filme não encontrado.");
 
         // Impede que o mesmo filme seja favoritado mais de uma vez pelo mesmo usuário
         var alreadyFavorited = await _context.Favorites
-            .AnyAsync(f => f.MovieId == movieId && f.UserId == userId);
+            .AnyAsync(f => f.MovieId == movieId && f.UserId == userId, cancellationToken);
         if (alreadyFavorited)
-            throw new BadRequestException("Filme já está nos favoritos.");
+            throw new ConflictException("Filme já está nos favoritos.");
 
         var favorite = new Favorite
         {
@@ -39,30 +38,26 @@ public class FavoriteService : IFavoriteService
 
         _context.Favorites.Add(favorite);
 
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(cancellationToken);
     }
 
     // Remove um filme da lista de favoritos do usuário
-    public async Task<bool> RemoveAsync(int movieId, string userId)
+    public async Task RemoveAsync(int movieId, string userId, CancellationToken cancellationToken = default)
     {
         var favorite = await _context.Favorites
-            .FirstOrDefaultAsync(f => f.MovieId == movieId && f.UserId == userId);
-
-        // Retorna false caso o favorito não exista
-        if (favorite == null)
-            return false;
+            .FirstOrDefaultAsync(f => f.MovieId == movieId && f.UserId == userId, cancellationToken)
+            ?? throw new NotFoundException("Favorito não encontrado.");
 
         _context.Favorites.Remove(favorite);
-        await _context.SaveChangesAsync();
-        return true;
+        await _context.SaveChangesAsync(cancellationToken);
     }
 
     // Retorna lista de filmes favoritados pelo usuário
     // Usa projection direta para DTO (evita carregar entidade inteira desnecessariamente)
-    public async Task<IEnumerable<FavoriteResponseDto>> GetMyFavoritesAsync(string userId)
+    public async Task<IEnumerable<FavoriteResponseDto>> GetMyFavoritesAsync(string userId, CancellationToken cancellationToken = default)
     {
         return await _context.Favorites
-            .Include(f => f.Movie)  // Necessário para acessar dados do filme relacionado
+            .Include(f => f.Movie)
             .Where(f => f.UserId == userId)
             .Select(f => new FavoriteResponseDto
             {
@@ -70,6 +65,6 @@ public class FavoriteService : IFavoriteService
                 MovieTitle = f.Movie.Title,
                 ReleaseYear = f.Movie.ReleaseYear
             })
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
     }
 }

@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Identity;
-using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using MovieHub.Data.Dtos.Auth;
+using MovieHub.Exceptions;
 using MovieHub.Models;
 using MovieHub.Services.Interfaces;
 using System.IdentityModel.Tokens.Jwt;
@@ -14,18 +14,18 @@ public class AuthService : IAuthService
 {
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly IConfiguration _configuration;
+    private readonly ITokenBlacklistService _blacklist;
 
-    // Injeta UserManager (ASP.NET Identity) para gerenciar usuários
-    // IConfiguration é usada para acessar configurações do JWT
-    public AuthService(UserManager<ApplicationUser> userManager, IConfiguration configuration)
+    public AuthService(UserManager<ApplicationUser> userManager, IConfiguration configuration, ITokenBlacklistService blacklist)
     {
         _userManager = userManager;
         _configuration = configuration;
+        _blacklist = blacklist;
     }
 
     // Responsável por registrar novo usuário no sistema
     // Retorna token JWT automaticamente após criação bem-sucedida
-    public async Task<AuthResponseDto?> RegisterAsync(RegisterDto dto)
+    public async Task<AuthResponseDto> RegisterAsync(RegisterDto dto)
     {
         var user = new ApplicationUser
         {
@@ -34,10 +34,11 @@ public class AuthService : IAuthService
         };
 
         var result = await _userManager.CreateAsync(user, dto.Password);
-
-        // Caso falhe (ex: senha fraca, email duplicado), retorna null
         if (!result.Succeeded)
-            return null;
+        {
+            var errors = string.Join("; ", result.Errors.Select(e => e.Description));
+            throw new BadRequestException(errors);
+        }
 
         await _userManager.AddToRoleAsync(user, "User");
 
@@ -46,17 +47,26 @@ public class AuthService : IAuthService
 
     // Realiza autenticação verificando email e senha
     // Retorna token JWT válido se credenciais estiverem corretas
-    public async Task<AuthResponseDto?> LoginAsync(LoginDto dto)
+    public async Task<AuthResponseDto> LoginAsync(LoginDto dto)
     {
         var user = await _userManager.FindByEmailAsync(dto.Email);
-        if (user == null)
-            return null;
-
-        var validPassword = await _userManager.CheckPasswordAsync(user, dto.Password);
-        if (!validPassword)
-            return null;
+        if (user == null || !await _userManager.CheckPasswordAsync(user, dto.Password))
+            throw new UnauthorizedException("Email ou senha inválidos.");
 
         return await GenerateTokenAsync(user);
+    }
+
+    //LOGOUT
+    public async Task LogoutAsync(string token)
+    {
+        var handler = new JwtSecurityTokenHandler();
+        var jwt = handler.ReadJwtToken(token);
+
+        var jti = jwt.Id;
+        var expiresIn = jwt.ValidTo - DateTime.UtcNow;
+
+        if (expiresIn > TimeSpan.Zero)
+            await _blacklist.InvalidateTokenAsync(jti, expiresIn);
     }
 
     //  Gera o JWT contendo identificação e permissões do usuário

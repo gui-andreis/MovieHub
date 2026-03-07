@@ -37,6 +37,8 @@ public class ExceptionMiddleware
             NotFoundException => (HttpStatusCode.NotFound, exception.Message),
             BadRequestException => (HttpStatusCode.BadRequest, exception.Message),
             ForbiddenException => (HttpStatusCode.Forbidden, exception.Message),
+            UnauthorizedException => (HttpStatusCode.Unauthorized, exception.Message),
+            ConflictException => (HttpStatusCode.Conflict, exception.Message),
             _ => (HttpStatusCode.InternalServerError, "Ocorreu um erro interno no servidor.")
         };
 
@@ -46,7 +48,8 @@ public class ExceptionMiddleware
         var response = new
         {
             status = (int)statusCode,
-            message
+            message,
+            data = (object?)null
         };
 
         await context.Response.WriteAsync(JsonSerializer.Serialize(response)); // Retorna JSON padronizado
