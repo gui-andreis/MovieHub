@@ -12,6 +12,7 @@ builder.Services.AddSwaggerConfiguration();
 builder.Services.AddIdentityConfiguration();
 builder.Services.AddJwtConfiguration(builder.Configuration);
 builder.Services.AddApplicationServices(builder.Configuration);
+builder.Services.AddRateLimiterConfiguration();
 
 var app = builder.Build();
 
@@ -31,6 +32,7 @@ if (app.Environment.IsDevelopment())
 //Garante que as Roles padrão (ex: Admin, User) e o usuário administrador inicial existam
 await app.SeedRolesAndAdminAsync();
 
+app.UseRateLimiter();
 app.UseAppMiddlewares();
 app.UseStaticFiles();
 
@@ -38,5 +40,5 @@ app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapControllers();
+app.MapControllers().RequireRateLimiting("fixed");
 app.Run();

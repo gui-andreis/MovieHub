@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using MovieHub.Data;
 using MovieHub.Data.Dtos.Genre;
 using MovieHub.Exceptions;
@@ -12,17 +13,28 @@ public class GenreService : IGenreService
 {
     private readonly ApplicationDbContext _context;
     private readonly IMapper _mapper;
+    private readonly IMemoryCache _cache;
 
-    public GenreService(ApplicationDbContext context, IMapper mapper)
+    private const string GenresCacheKey = "genres:all";
+
+    public GenreService(ApplicationDbContext context, IMapper mapper, IMemoryCache cache)
     {
         _context = context;
         _mapper = mapper;
+        _cache = cache;
     }
 
     public async Task<IEnumerable<GenreResponseDto>> GetAllAsync(CancellationToken cancellationToken = default)
     {
+        if (_cache.TryGetValue(GenresCacheKey, out IEnumerable<GenreResponseDto>? cached) && cached != null)
+            return cached;
+
         var genres = await _context.Genres.OrderBy(g => g.Name).ToListAsync(cancellationToken);
-        return _mapper.Map<IEnumerable<GenreResponseDto>>(genres);
+        var dto = _mapper.Map<IEnumerable<GenreResponseDto>>(genres);
+
+        _cache.Set(GenresCacheKey, dto, TimeSpan.FromMinutes(10)); // gêneros mudam pouco
+
+        return dto;
     }
 
     public async Task<GenreResponseDto> CreateAsync(GenreRequestDto dto, CancellationToken cancellationToken = default)
@@ -34,6 +46,7 @@ public class GenreService : IGenreService
         var genre = _mapper.Map<Genre>(dto);
         _context.Genres.Add(genre);
         await _context.SaveChangesAsync(cancellationToken);
+        _cache.Remove(GenresCacheKey);
         return _mapper.Map<GenreResponseDto>(genre);
     }
 
@@ -44,5 +57,7 @@ public class GenreService : IGenreService
 
         _context.Genres.Remove(genre);
         await _context.SaveChangesAsync(cancellationToken);
+        _cache.Remove(GenresCacheKey);
     }
 }
+

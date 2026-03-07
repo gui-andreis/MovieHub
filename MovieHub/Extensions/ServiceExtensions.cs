@@ -25,6 +25,7 @@ public static class ServiceExtensions
         services.AddScoped<IFavoriteService, FavoriteService>();
         services.AddScoped<IImageService, ImageService>();
         services.AddScoped<IGenreService, GenreService>();
+        services.AddMemoryCache();
 
         return services;
     }

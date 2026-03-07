@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MovieHub.Data.Dtos.Review;
+using MovieHub.Queries.Reviews;
 using MovieHub.Services.Interfaces;
 using System.Security.Claims;
 
@@ -27,9 +28,9 @@ public class ReviewController : AppControllerBase
     }
 
     [HttpGet("movie/{movieId}")]
-    public async Task<IActionResult> GetAllByMovie(int movieId, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetAllByMovie(int movieId, [FromQuery] ReviewQueryParameters parameters, CancellationToken cancellationToken)
     {
-        var reviews = await _reviewService.GetAllByMovieAsync(movieId, cancellationToken);
+        var reviews = await _reviewService.GetAllByMovieAsync(movieId, parameters, cancellationToken);
         return Ok(reviews, "Reviews recuperadas com sucesso.");
     }
 

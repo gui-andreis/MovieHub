@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using MovieHub.Data;
 using MovieHub.Data.Dtos.Movie;
 using MovieHub.Exceptions;
@@ -8,6 +9,7 @@ using MovieHub.Pagination;
 using MovieHub.Queries.Movies;
 using MovieHub.Services.Interfaces;
 
+
 namespace MovieHub.Services.Implementations;
 
 public class MovieService : IMovieService
@@ -15,12 +17,16 @@ public class MovieService : IMovieService
     private readonly ApplicationDbContext _context;
     private readonly IMapper _mapper;
     private readonly IImageService _imageService;
+    private readonly IMemoryCache _cache;
 
-    public MovieService(ApplicationDbContext context, IMapper mapper, IImageService imageService)
+    private static string MovieCacheKey(int id) => $"movie:{id}";
+
+    public MovieService(ApplicationDbContext context, IMapper mapper, IImageService imageService, IMemoryCache cache)
     {
         _context = context;
         _mapper = mapper;
         _imageService = imageService;
+        _cache = cache;
     }
 
     // Cria um novo filme no banco de dados
@@ -48,12 +54,18 @@ public class MovieService : IMovieService
             .Include(mg => mg.Genre)
             .LoadAsync();
 
-        return _mapper.Map<MovieResponseDto>(movie);
+        var responseDto = _mapper.Map<MovieResponseDto>(movie);
+        _cache.Set(MovieCacheKey(movie.Id), responseDto, TimeSpan.FromMinutes(2));
+        return responseDto;
     }
+
 
     // Busca filme por Id incluindo suas reviews
     public async Task<MovieResponseDto> GetByIdAsync(int id, CancellationToken cancellationToken = default)
     {
+        if (_cache.TryGetValue(MovieCacheKey(id), out MovieResponseDto? cached) && cached != null)
+            return cached;
+
         var movie = await _context.Movies
             .Include(m => m.Reviews)
             .Include(m => m.MovieGenres)
@@ -61,7 +73,11 @@ public class MovieService : IMovieService
             .FirstOrDefaultAsync(m => m.Id == id, cancellationToken)
             ?? throw new NotFoundException($"Filme com id {id} não encontrado.");
 
-        return _mapper.Map<MovieResponseDto>(movie);
+        var dto = _mapper.Map<MovieResponseDto>(movie);
+
+        _cache.Set(MovieCacheKey(id), dto, TimeSpan.FromMinutes(2));
+
+        return dto;
     }
 
     // Atualiza dados de um filme existente
@@ -91,8 +107,8 @@ public class MovieService : IMovieService
 
         _mapper.Map(dto, movie);
         await _context.SaveChangesAsync(cancellationToken);
+        _cache.Remove(MovieCacheKey(id));
     }
-
 
     // Remove um filme do banco
     public async Task DeleteAsync(int id, CancellationToken cancellationToken = default)
@@ -104,6 +120,7 @@ public class MovieService : IMovieService
         _imageService.DeleteImage(movie.ImagePath);
         _context.Movies.Remove(movie);
         await _context.SaveChangesAsync(cancellationToken);
+        _cache.Remove(MovieCacheKey(id));
     }
 
     // Retorna lista paginada de filmes
