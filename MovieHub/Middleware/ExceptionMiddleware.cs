@@ -3,11 +3,11 @@ using System.Text.Json;
 using MovieHub.Exceptions;
 namespace MovieHub.Middleware;
 
-// Middleware responsável por capturar exceptions globais
+
 public class ExceptionMiddleware
 {
-    private readonly RequestDelegate _next; // Próximo middleware no pipeline
-    private readonly ILogger<ExceptionMiddleware> _logger; // Logger para registrar erros
+    private readonly RequestDelegate _next; 
+    private readonly ILogger<ExceptionMiddleware> _logger; 
 
     public ExceptionMiddleware(RequestDelegate next, ILogger<ExceptionMiddleware> logger)
     {
@@ -15,23 +15,21 @@ public class ExceptionMiddleware
         _logger = logger;
     }
 
-    // Executado automaticamente a cada requisição HTTP
     public async Task InvokeAsync(HttpContext context)
     {
         try
         {
-            await _next(context);// Executa o próximo middleware ou controller
+            await _next(context);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Erro não tratado: {Message}", ex.Message); // Registra erro no log
-            await HandleExceptionAsync(context, ex); // Trata e padroniza resposta de erro
+            _logger.LogError(ex, "Erro não tratado: {Message}", ex.Message);
+            await HandleExceptionAsync(context, ex);
         }
     }
 
     private static async Task HandleExceptionAsync(HttpContext context, Exception exception)
     {
-        // Define status HTTP baseado no tipo da exception
         var (statusCode, message) = exception switch
         {
             NotFoundException => (HttpStatusCode.NotFound, exception.Message),
@@ -52,6 +50,6 @@ public class ExceptionMiddleware
             data = (object?)null
         };
 
-        await context.Response.WriteAsync(JsonSerializer.Serialize(response)); // Retorna JSON padronizado
+        await context.Response.WriteAsync(JsonSerializer.Serialize(response)); 
     }
 }

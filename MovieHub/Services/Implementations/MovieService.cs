@@ -29,7 +29,6 @@ public class MovieService : IMovieService
         _cache = cache;
     }
 
-    // Cria um novo filme no banco de dados
     public async Task<MovieResponseDto> CreateAsync(CreateMovieDto dto, CancellationToken cancellationToken = default)
     {
         var movie = _mapper.Map<Movie>(dto);
@@ -60,7 +59,6 @@ public class MovieService : IMovieService
     }
 
 
-    // Busca filme por Id incluindo suas reviews
     public async Task<MovieResponseDto> GetByIdAsync(int id, CancellationToken cancellationToken = default)
     {
         if (_cache.TryGetValue(MovieCacheKey(id), out MovieResponseDto? cached) && cached != null)
@@ -80,7 +78,6 @@ public class MovieService : IMovieService
         return dto;
     }
 
-    // Atualiza dados de um filme existente
     public async Task UpdateAsync(int id, UpdateMovieDto dto, CancellationToken cancellationToken = default)
     {
         var movie = await _context.Movies
@@ -110,7 +107,6 @@ public class MovieService : IMovieService
         _cache.Remove(MovieCacheKey(id));
     }
 
-    // Remove um filme do banco
     public async Task DeleteAsync(int id, CancellationToken cancellationToken = default)
     {
         var movie = await _context.Movies.FindAsync([id], cancellationToken)
@@ -123,7 +119,6 @@ public class MovieService : IMovieService
         _cache.Remove(MovieCacheKey(id));
     }
 
-    // Retorna lista paginada de filmes
     public async Task<PagedResult<MovieResponseDto>> GetAllAsync(MovieQueryParameters parameters, CancellationToken cancellationToken = default)
     {
         var query = _context.Movies
@@ -132,7 +127,6 @@ public class MovieService : IMovieService
                 .ThenInclude(mg => mg.Genre)
             .AsQueryable();
 
-        // Filtros
         if (!string.IsNullOrWhiteSpace(parameters.Title))
             query = query.Where(m => m.Title.ToLower().Contains(parameters.Title.ToLower()));
 
@@ -151,7 +145,6 @@ public class MovieService : IMovieService
             query = query.Where(m => m.Reviews.Any() &&
                 m.Reviews.Average(r => r.Rating) <= parameters.MaxRating.Value);
 
-        // Ordenação
         query = parameters.OrderBy?.ToLower() switch
         {
             "title" => query.OrderBy(m => m.Title),

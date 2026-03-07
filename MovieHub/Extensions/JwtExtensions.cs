@@ -35,7 +35,7 @@ public static class JwtExtensions
             {
                 OnTokenValidated = async context =>
                 {
-                    var blacklist = context.HttpContext.RequestServices // revisar BLACKLIST
+                    var blacklist = context.HttpContext.RequestServices
                         .GetRequiredService<ITokenBlacklistService>();
 
                     var jti = context.Principal?.FindFirst("jti")?.Value;

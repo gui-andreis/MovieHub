@@ -8,14 +8,14 @@ public class MovieProfile : Profile
 {
     public MovieProfile()
     {
-        // DTO -> Entity (Create)
+        // CreateMovieDto -> Movie
         CreateMap<CreateMovieDto, Movie>();
 
-        // DTO -> Entity (Update)
+        // UpdateMovieDto -> Movie
         CreateMap<UpdateMovieDto, Movie>()
             .ForMember(dest => dest.Id, opt => opt.Ignore());
 
-        // Entity -> DTO (Response)
+        // Movie -> MovieResponseDto
         CreateMap<Movie, MovieResponseDto>()
             .ForMember(dest => dest.AverageRating,
                 opt => opt.MapFrom(src => src.Reviews.Any()

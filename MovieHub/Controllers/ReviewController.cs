@@ -24,7 +24,7 @@ public class ReviewController : AppControllerBase
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
         await _reviewService.CreateAsync(dto, userId, cancellationToken);
-        return Ok("Review criada com sucesso.");
+        return NoContent("Review criada com sucesso.");
     }
 
     [HttpGet("movie/{movieId}")]

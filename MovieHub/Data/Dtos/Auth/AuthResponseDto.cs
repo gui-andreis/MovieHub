@@ -1,6 +1,5 @@
 ﻿namespace MovieHub.Data.Dtos.Auth;
 
-//retorna token JWT
 public class AuthResponseDto
 {
     public string Token { get; set; } = string.Empty;

@@ -2,10 +2,8 @@
 
 namespace MovieHub.Extensions;
 
-// Extensões para configuração do Swagger e autenticação JWT.
 public static class SwaggerExtensions
 {
-    // Adiciona configuração do Swagger com suporte a autenticação JWT Bearer.
     public static IServiceCollection AddSwaggerConfiguration(this IServiceCollection services)
     {
         services.AddSwaggerGen(c =>

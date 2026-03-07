@@ -11,13 +11,11 @@ public class FavoriteService : IFavoriteService
 {
     private readonly ApplicationDbContext _context;
 
-    // Injeta DbContext para acesso à persistência
     public FavoriteService(ApplicationDbContext context)
     {
         _context = context;
     }
 
-    // Adiciona um filme à lista de favoritos do usuário
     public async Task AddAsync(int movieId, string userId, CancellationToken cancellationToken = default)
     {
         var movieExists = await _context.Movies.AnyAsync(m => m.Id == movieId, cancellationToken);
@@ -41,7 +39,6 @@ public class FavoriteService : IFavoriteService
         await _context.SaveChangesAsync(cancellationToken);
     }
 
-    // Remove um filme da lista de favoritos do usuário
     public async Task RemoveAsync(int movieId, string userId, CancellationToken cancellationToken = default)
     {
         var favorite = await _context.Favorites
@@ -52,7 +49,6 @@ public class FavoriteService : IFavoriteService
         await _context.SaveChangesAsync(cancellationToken);
     }
 
-    // Retorna lista de filmes favoritados pelo usuário
     // Usa projection direta para DTO (evita carregar entidade inteira desnecessariamente)
     public async Task<IEnumerable<FavoriteResponseDto>> GetMyFavoritesAsync(string userId, CancellationToken cancellationToken = default)
     {

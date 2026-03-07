@@ -23,8 +23,6 @@ public class AuthService : IAuthService
         _blacklist = blacklist;
     }
 
-    // Responsável por registrar novo usuário no sistema
-    // Retorna token JWT automaticamente após criação bem-sucedida
     public async Task<AuthResponseDto> RegisterAsync(RegisterDto dto)
     {
         var user = new ApplicationUser
@@ -41,12 +39,9 @@ public class AuthService : IAuthService
         }
 
         await _userManager.AddToRoleAsync(user, "User");
-
         return await GenerateTokenAsync(user);
     }
 
-    // Realiza autenticação verificando email e senha
-    // Retorna token JWT válido se credenciais estiverem corretas
     public async Task<AuthResponseDto> LoginAsync(LoginDto dto)
     {
         var user = await _userManager.FindByEmailAsync(dto.Email);
@@ -56,36 +51,28 @@ public class AuthService : IAuthService
         return await GenerateTokenAsync(user);
     }
 
-    //LOGOUT
     public async Task LogoutAsync(string token)
     {
-        var handler = new JwtSecurityTokenHandler();
-        var jwt = handler.ReadJwtToken(token);
-
-        var jti = jwt.Id;
+        var jwt = new JwtSecurityTokenHandler().ReadJwtToken(token);
         var expiresIn = jwt.ValidTo - DateTime.UtcNow;
 
         if (expiresIn > TimeSpan.Zero)
-            await _blacklist.InvalidateTokenAsync(jti, expiresIn);
+            await _blacklist.InvalidateTokenAsync(jwt.Id, expiresIn);
     }
 
-    //  Gera o JWT contendo identificação e permissões do usuário
     private async Task<AuthResponseDto> GenerateTokenAsync(ApplicationUser user)
     {
         var jwtSettings = _configuration.GetSection("JwtSettings");
-
-        // Recupera roles associadas ao usuário
         var roles = await _userManager.GetRolesAsync(user);
 
         var claims = new List<Claim>
         {
-            new Claim(ClaimTypes.NameIdentifier, user.Id),// Identificador único do usuário
+            new Claim(ClaimTypes.NameIdentifier, user.Id),
             new Claim(JwtRegisteredClaimNames.Email, user.Email!),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
 
-        // Cada role vira uma claim do tipo Role
-        // Permite uso de [Authorize(Roles = "Admin")] nos controllers
+        // Cada role vira uma claim — permite uso de [Authorize(Roles = "Admin")]
         foreach (var role in roles)
             claims.Add(new Claim(ClaimTypes.Role, role));
 

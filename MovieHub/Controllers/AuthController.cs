@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using MovieHub.Common;
 using MovieHub.Data.Dtos.Auth;
 using MovieHub.Services.Interfaces;
 
@@ -11,23 +12,23 @@ public class AuthController : AppControllerBase
 {
     private readonly IAuthService _authService;
 
-    // Injeção de dependência do serviço responsável pela lógica de autenticação
     public AuthController(IAuthService authService)
     {
         _authService = authService;
     }
 
-    //Retorna dados do usuário após criação bem-sucedida
     [HttpPost("register")]
+    [ProducesResponseType(typeof(ApiResponse<AuthResponseDto>), 200)]
+    [ProducesResponseType(400)]
     public async Task<IActionResult> Register(RegisterDto dto)
     {
         var result = await _authService.RegisterAsync(dto);
         return Ok(result, "Usuário registrado com sucesso.");
     }
 
-    // Endpoint responsável pela autenticação do usuário
-    // Retorna JWT válido se credenciais estiverem corretas
     [HttpPost("login")]
+    [ProducesResponseType(typeof(ApiResponse<AuthResponseDto>), 200)]
+    [ProducesResponseType(401)]
     public async Task<IActionResult> Login(LoginDto dto)
     {
         var result = await _authService.LoginAsync(dto);
@@ -36,10 +37,14 @@ public class AuthController : AppControllerBase
 
     [Authorize]
     [HttpPost("logout")]
+    [ProducesResponseType(200)]
+    [ProducesResponseType(401)]
     public async Task<IActionResult> Logout()
     {
-        // Extrai o token cru do header Authorization (remove o prefixo "Bearer ")
-        var token = Request.Headers["Authorization"].ToString().Replace("Bearer ", "");
+        var token = HttpContext.Request.Headers["Authorization"]
+            .ToString()
+            .Split(" ")
+            .Last();
         await _authService.LogoutAsync(token);
         return NoContent("Logout realizado com sucesso.");
     }

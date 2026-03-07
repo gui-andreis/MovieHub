@@ -2,7 +2,7 @@
 
 using MovieHub.Services.Interfaces;
 
-public class ImageService : IImageService // revisar 
+public class ImageService : IImageService 
 {
     private readonly string _imagePath;
 

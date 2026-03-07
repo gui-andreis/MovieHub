@@ -8,13 +8,13 @@ public class ReviewProfile : Profile
 {
     public ReviewProfile()
     {
-        // DTO -> Entity (Create)
+        // CreateReviewDto -> Review
         CreateMap<CreateReviewDto, Review>();
 
-        // DTO -> Entity (Update)
+        // UpdateReviewDto -> Review
         CreateMap<UpdateReviewDto, Review>();
 
-        // Entity -> DTO (Response)
+        // Review -> ReviewResponseDto
         CreateMap<Review, ReviewResponseDto>()
             .ForMember(dest => dest.UserName,
                 opt => opt.MapFrom(src => src.User != null ? src.User.UserName : string.Empty));
