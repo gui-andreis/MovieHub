@@ -1,0 +1,32 @@
+# Blueprint do Render: New → Blueprint → aponte para este repositório.
+# Banco: Neon (Postgres serverless) | Redis: Upstash — ambos com plano gratuito.
+services:
+  - type: web
+    name: moviehub-api
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: DATABASE_URL
+        sync: false          # connection string do Neon (postgresql://...?sslmode=require)
+      - key: ConnectionStrings__Redis
+        sync: false          # rediss://default:<senha>@<host>.upstash.io:6379 (opcional)
+      - key: Jwt__SecretKey
+        generateValue: true
+      - key: Admin__Email
+        sync: false
+      - key: Admin__Password
+        sync: false
+      - key: Cors__AllowedOrigins
+        sync: false          # ex.: https://moviehub.vercel.app,https://*.vercel.app
+      - key: Tmdb__ReadAccessToken
+        sync: false
+      - key: Tmdb__SeedMovies
+        value: "300"
+      - key: Tmdb__SeedSeries
+        value: "120"

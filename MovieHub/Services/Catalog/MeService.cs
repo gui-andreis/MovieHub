@@ -283,13 +283,17 @@ public class MeService : IMeService
             .Select(r => r.TitleId).ToListAsync(ct);
 
         var genreSourceIds = touchedTitleIds.Union(likedIds).ToList();
-        var topGenres = await _db.TitleGenres.AsNoTracking()
+        var genreNames = await _db.TitleGenres.AsNoTracking()
             .Where(tg => genreSourceIds.Contains(tg.TitleId))
-            .GroupBy(tg => tg.Genre.Name)
+            .Select(tg => tg.Genre.Name)
+            .ToListAsync(ct);
+        var topGenres = genreNames
+            .GroupBy(n => n)
             .Select(g => new GenreCountDto(g.Key, g.Count()))
             .OrderByDescending(g => g.Count)
+            .ThenBy(g => g.Name)
             .Take(5)
-            .ToListAsync(ct);
+            .ToList();
 
         return new MeStatsDto(
             WatchedCount: watchedTitleIds.Count,

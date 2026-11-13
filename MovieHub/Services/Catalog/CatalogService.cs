@@ -150,11 +150,10 @@ public class CatalogService : ICatalogService
             .Select(s => new SeasonSummaryDto(s.Id, s.SeasonNumber, s.Name, s.EpisodeCount, s.PosterUrl, s.AirDate))
             .ToListAsync(ct);
 
-        var ratings = await _db.Reviews.AsNoTracking().Where(r => r.TitleId == id)
-            .GroupBy(_ => 1)
-            .Select(g => new { Avg = g.Average(r => (double)r.Rating), Count = g.Count() })
-            .FirstOrDefaultAsync(ct);
-        dto.Rating = new RatingSummaryDto(ratings == null ? 0 : Math.Round(ratings.Avg, 1), ratings?.Count ?? 0);
+        var reviews = _db.Reviews.AsNoTracking().Where(r => r.TitleId == id);
+        var reviewCount = await reviews.CountAsync(ct);
+        var reviewAvg = reviewCount == 0 ? 0 : await reviews.AverageAsync(r => (double)r.Rating, ct);
+        dto.Rating = new RatingSummaryDto(Math.Round(reviewAvg, 1), reviewCount);
 
         var profile = await _current.GetProfileAsync(ct);
         if (profile != null)
