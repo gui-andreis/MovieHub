@@ -13,13 +13,12 @@ public class MovieQueryParameters
         set => _pageSize = value > MaxPageSize ? MaxPageSize : value;
     }
 
-    // Filtros
     public string? Title { get; set; }
     public int? ReleaseYear { get; set; }
     public List<int>? GenreIds { get; set; }
     public double? MinRating { get; set; }
     public double? MaxRating { get; set; }
 
-    // Ordenação: "title", "year", "rating"
+    // "title", "title_desc", "year", "year_desc"
     public string? OrderBy { get; set; }
 }

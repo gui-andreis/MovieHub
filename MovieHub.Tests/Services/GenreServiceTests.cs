@@ -7,6 +7,8 @@ using MovieHub.Models;
 using MovieHub.Profiles;
 using MovieHub.Services.Implementations;
 using MovieHub.Tests.Helpers;
+using Microsoft.Extensions.Caching.Memory;
+
 
 namespace MovieHub.Tests.Services;
 
@@ -23,8 +25,10 @@ public class GenreServiceTests
         _mapper = config.CreateMapper();
     }
 
+    private readonly IMemoryCache _cache = new MemoryCache(new MemoryCacheOptions());
+
     private GenreService CreateService(ApplicationDbContext context)
-        => new GenreService(context, _mapper);
+        => new GenreService(context, _mapper, _cache);
 
     // -------------------------
     // GetAllAsync

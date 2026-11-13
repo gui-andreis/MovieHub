@@ -9,6 +9,7 @@ using MovieHub.Profiles;
 using MovieHub.Services.Implementations;
 using MovieHub.Services.Interfaces;
 using MovieHub.Tests.Helpers;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace MovieHub.Tests.Services;
 
@@ -28,9 +29,12 @@ public class MovieServiceTests
         _imageServiceMock = new Mock<IImageService>();
     }
 
+    
+    private readonly IMemoryCache _cache = new MemoryCache(new MemoryCacheOptions());
     // helper pra criar o service com banco limpo a cada teste
     private MovieService CreateService(ApplicationDbContext context)
-        => new MovieService(context, _mapper, _imageServiceMock.Object);
+    => new MovieService(context, _mapper, _imageServiceMock.Object, _cache);
+
 
     // -------------------------
     // GetByIdAsync

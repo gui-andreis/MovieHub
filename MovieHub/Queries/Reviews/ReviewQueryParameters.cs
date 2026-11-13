@@ -13,9 +13,7 @@ public class ReviewQueryParameters
         set => _pageSize = value > MaxPageSize ? MaxPageSize : value;
     }
 
-
-
-    // Ordenação: "desc e asc"
+    // "newest" (padrão), "oldest", "rating_desc", "rating_asc"
     public string? OrderBy { get; set; } = "newest";
 
 }

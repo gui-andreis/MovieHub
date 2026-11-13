@@ -117,11 +117,18 @@ O logout invalida o token via blacklist no Redis — o token não pode ser reuti
 ### ⭐ Reviews
 | Método | Rota | Descrição | Auth |
 |--------|------|-----------|------|
-| GET | `/api/review/movie/{movieId}` | Reviews de um filme | ❌ |
+| GET | `/api/review/movie/{movieId}` | Reviews de um filme (paginado + ordenação) | ❌ |
 | GET | `/api/review/my` | Minhas reviews | 🔒 User |
 | POST | `/api/review` | Criar review | 🔒 User |
 | PUT | `/api/review/{id}` | Editar review | 🔒 Dono |
 | DELETE | `/api/review/{id}` | Deletar review | 🔒 Dono / Admin |
+
+#### Parâmetros disponíveis em `GET /api/review/movie/{movieId}`
+| Parâmetro | Tipo | Descrição |
+|-----------|------|-----------|
+| `orderBy` | string | `newest` (padrão), `oldest`, `rating_desc`, `rating_asc` |
+| `pageNumber` | int | Página (padrão: 1) |
+| `pageSize` | int | Itens por página (padrão: 10, máx: 50) |
 
 ### ❤️ Favorites
 | Método | Rota | Descrição | Auth |
@@ -177,7 +184,8 @@ MovieHub/
 ├── Pagination/           # Classes de paginação
 ├── Profiles/             # Perfis do AutoMapper
 ├── Queries/              # Parâmetros de query (filtros/paginação)
-│   └── Movies/
+│   ├── Movies/
+│   └── Reviews/
 └── Services/
     ├── Implementations/  # Implementações dos services
     └── Interfaces/       # Contratos dos services
@@ -233,6 +241,7 @@ Cobertura atual: **30 testes unitários** cobrindo `MovieService`, `ReviewServic
 - CRUD completo de filmes com upload de imagem opcional
 - Gêneros com relacionamento N:N
 - Filtros, busca e paginação em filmes
+- Paginação e ordenação em reviews
 - Reviews com restrição de duplicata por usuário
 - Favoritos com validação de conflito
 - Padronização de responses com envelope `{ data, message, status }`
@@ -240,14 +249,24 @@ Cobertura atual: **30 testes unitários** cobrindo `MovieService`, `ReviewServic
 - Testes unitários com xUnit + FluentAssertions (30 testes)
 - CancellationToken em todas as operações async
 - DeleteBehavior.Cascade configurado explicitamente
+- Rate limiting (100 requests/min por IP)
+- Cache em memória para `GET /movies/{id}` e `GET /genres`
 
 ### 🔧 Próximas melhorias
-- [ ] Rate limiting
-- [ ] Cache em endpoints de leitura (`GET /movies`)
 - [ ] Refresh token + rotação de tokens
 - [ ] Migração de imagens para S3/Cloudflare R2
 - [ ] Front-end React
 - [ ] Melhoria contínua de código e arquitetura
+
+melhorar:
+
+Testes só unitários, sem integração
+localStorage pra JWT
+Sem CI/CD
+Sem logs estruturados (Serilog)
+Front ainda não existe
+
+
 
 ---
 
