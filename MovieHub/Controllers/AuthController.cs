@@ -1,51 +1,49 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using MovieHub.Common;
-using MovieHub.Data.Dtos.Auth;
-using MovieHub.Services.Interfaces;
+using MovieHub.Dtos;
+using MovieHub.Services;
+using MovieHub.Services.Auth;
 
 namespace MovieHub.Controllers;
 
-[ApiController]
-[Route("api/[controller]")]
+[Route("api/auth")]
 public class AuthController : AppControllerBase
 {
-    private readonly IAuthService _authService;
+    private readonly IAuthService _auth;
+    private readonly ICurrentProfile _current;
 
-    public AuthController(IAuthService authService)
+    public AuthController(IAuthService auth, ICurrentProfile current)
     {
-        _authService = authService;
+        _auth = auth;
+        _current = current;
     }
 
+    /// <summary>Cria a conta (com um perfil inicial) e já retorna os tokens.</summary>
     [HttpPost("register")]
-    [ProducesResponseType(typeof(ApiResponse<AuthResponseDto>), 200)]
-    [ProducesResponseType(400)]
-    public async Task<IActionResult> Register(RegisterDto dto)
-    {
-        var result = await _authService.RegisterAsync(dto);
-        return Ok(result, "Usuário registrado com sucesso.");
-    }
+    public async Task<IActionResult> Register([FromBody] RegisterRequest request, CancellationToken ct)
+        => Created(await _auth.RegisterAsync(request, ct), "Conta criada com sucesso.");
 
     [HttpPost("login")]
-    [ProducesResponseType(typeof(ApiResponse<AuthResponseDto>), 200)]
-    [ProducesResponseType(401)]
-    public async Task<IActionResult> Login(LoginDto dto)
-    {
-        var result = await _authService.LoginAsync(dto);
-        return Ok(result, "Login realizado com sucesso.");
-    }
+    public async Task<IActionResult> Login([FromBody] LoginRequest request, CancellationToken ct)
+        => Ok(await _auth.LoginAsync(request, ct), "Login realizado com sucesso.");
+
+    /// <summary>Troca um refresh token válido por um novo par de tokens (rotação).</summary>
+    [HttpPost("refresh")]
+    public async Task<IActionResult> Refresh([FromBody] RefreshRequest request, CancellationToken ct)
+        => Ok(await _auth.RefreshAsync(request.RefreshToken, ct), "Tokens renovados.");
 
     [Authorize]
     [HttpPost("logout")]
-    [ProducesResponseType(200)]
-    [ProducesResponseType(401)]
-    public async Task<IActionResult> Logout()
+    public async Task<IActionResult> Logout(CancellationToken ct)
     {
-        var token = HttpContext.Request.Headers["Authorization"]
-            .ToString()
-            .Split(" ")
-            .Last();
-        await _authService.LogoutAsync(token);
-        return NoContent("Logout realizado com sucesso.");
+        var header = Request.Headers.Authorization.ToString();
+        var token = header.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase) ? header[7..].Trim() : null;
+        await _auth.LogoutAsync(_current.RequireUserId(), token, ct);
+        return Done("Logout realizado com sucesso.");
     }
+
+    [Authorize]
+    [HttpGet("me")]
+    public async Task<IActionResult> Me()
+        => Ok(await _auth.GetMeAsync(_current.RequireUserId()));
 }

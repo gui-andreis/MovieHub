@@ -1,13 +1,17 @@
-﻿using System.Net;
+using System.Net;
 using System.Text.Json;
+using MovieHub.Common;
 using MovieHub.Exceptions;
+
 namespace MovieHub.Middleware;
 
-
+/// <summary>Converte exceções em respostas no envelope padrão { status, message, data }.</summary>
 public class ExceptionMiddleware
 {
-    private readonly RequestDelegate _next; 
-    private readonly ILogger<ExceptionMiddleware> _logger; 
+    private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
+
+    private readonly RequestDelegate _next;
+    private readonly ILogger<ExceptionMiddleware> _logger;
 
     public ExceptionMiddleware(RequestDelegate next, ILogger<ExceptionMiddleware> logger)
     {
@@ -21,35 +25,33 @@ public class ExceptionMiddleware
         {
             await _next(context);
         }
+        catch (OperationCanceledException) when (context.RequestAborted.IsCancellationRequested)
+        {
+            // Cliente desistiu da requisição — nada a responder
+        }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Erro não tratado: {Message}", ex.Message);
-            await HandleExceptionAsync(context, ex);
+            var (status, message) = ex switch
+            {
+                NotFoundException => (HttpStatusCode.NotFound, ex.Message),
+                BadRequestException => (HttpStatusCode.BadRequest, ex.Message),
+                ForbiddenException => (HttpStatusCode.Forbidden, ex.Message),
+                UnauthorizedException => (HttpStatusCode.Unauthorized, ex.Message),
+                ConflictException => (HttpStatusCode.Conflict, ex.Message),
+                _ => (HttpStatusCode.InternalServerError, "Ocorreu um erro interno no servidor.")
+            };
+
+            if (status == HttpStatusCode.InternalServerError)
+                _logger.LogError(ex, "Erro não tratado em {Method} {Path}", context.Request.Method, context.Request.Path);
+            else
+                _logger.LogInformation("{Status} em {Method} {Path}: {Message}", (int)status, context.Request.Method, context.Request.Path, ex.Message);
+
+            if (context.Response.HasStarted) throw;
+
+            context.Response.Clear();
+            context.Response.ContentType = "application/json";
+            context.Response.StatusCode = (int)status;
+            await context.Response.WriteAsync(JsonSerializer.Serialize(ApiResponse<object>.Error((int)status, message), Json));
         }
-    }
-
-    private static async Task HandleExceptionAsync(HttpContext context, Exception exception)
-    {
-        var (statusCode, message) = exception switch
-        {
-            NotFoundException => (HttpStatusCode.NotFound, exception.Message),
-            BadRequestException => (HttpStatusCode.BadRequest, exception.Message),
-            ForbiddenException => (HttpStatusCode.Forbidden, exception.Message),
-            UnauthorizedException => (HttpStatusCode.Unauthorized, exception.Message),
-            ConflictException => (HttpStatusCode.Conflict, exception.Message),
-            _ => (HttpStatusCode.InternalServerError, "Ocorreu um erro interno no servidor.")
-        };
-
-        context.Response.ContentType = "application/json";
-        context.Response.StatusCode = (int)statusCode;
-
-        var response = new
-        {
-            status = (int)statusCode,
-            message,
-            data = (object?)null
-        };
-
-        await context.Response.WriteAsync(JsonSerializer.Serialize(response)); 
     }
 }

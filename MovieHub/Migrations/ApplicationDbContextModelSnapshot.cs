@@ -166,6 +166,9 @@ namespace MovieHub.Migrations
                         .IsConcurrencyToken()
                         .HasColumnType("text");
 
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("Email")
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)");
@@ -173,14 +176,16 @@ namespace MovieHub.Migrations
                     b.Property<bool>("EmailConfirmed")
                         .HasColumnType("boolean");
 
-                    b.Property<string>("FullName")
-                        .HasColumnType("text");
-
                     b.Property<bool>("LockoutEnabled")
                         .HasColumnType("boolean");
 
                     b.Property<DateTimeOffset?>("LockoutEnd")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.Property<string>("NormalizedEmail")
                         .HasMaxLength(256)
@@ -221,19 +226,115 @@ namespace MovieHub.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
-            modelBuilder.Entity("MovieHub.Models.Favorite", b =>
+            modelBuilder.Entity("MovieHub.Models.Collection", b =>
                 {
-                    b.Property<string>("UserId")
-                        .HasColumnType("text");
-
-                    b.Property<int>("MovieId")
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("integer");
 
-                    b.HasKey("UserId", "MovieId");
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.HasIndex("MovieId");
+                    b.Property<string>("BackdropUrl")
+                        .HasColumnType("text");
 
-                    b.ToTable("Favorites");
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
+
+                    b.Property<string>("Overview")
+                        .HasColumnType("text");
+
+                    b.Property<string>("PosterUrl")
+                        .HasColumnType("text");
+
+                    b.Property<int>("TmdbId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TmdbId")
+                        .IsUnique();
+
+                    b.ToTable("Collections");
+                });
+
+            modelBuilder.Entity("MovieHub.Models.Credit", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Character")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
+
+                    b.Property<string>("Job")
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)");
+
+                    b.Property<int>("Order")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("PersonId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
+                    b.Property<int>("TitleId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PersonId");
+
+                    b.HasIndex("TitleId", "Role", "Order");
+
+                    b.ToTable("Credits");
+                });
+
+            modelBuilder.Entity("MovieHub.Models.Episode", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateOnly?>("AirDate")
+                        .HasColumnType("date");
+
+                    b.Property<int>("EpisodeNumber")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
+
+                    b.Property<string>("Overview")
+                        .HasColumnType("text");
+
+                    b.Property<int?>("RuntimeMinutes")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("SeasonId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("StillUrl")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SeasonId", "EpisodeNumber")
+                        .IsUnique();
+
+                    b.ToTable("Episodes");
                 });
 
             modelBuilder.Entity("MovieHub.Models.Genre", b =>
@@ -246,14 +347,194 @@ namespace MovieHub.Migrations
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)");
+
+                    b.Property<string>("Slug")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)");
+
+                    b.Property<int?>("TmdbId")
+                        .HasColumnType("integer");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("Slug")
+                        .IsUnique();
+
+                    b.HasIndex("TmdbId")
+                        .IsUnique();
 
                     b.ToTable("Genres");
                 });
 
-            modelBuilder.Entity("MovieHub.Models.Movie", b =>
+            modelBuilder.Entity("MovieHub.Models.Keyword", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
+                    b.Property<int>("TmdbId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TmdbId")
+                        .IsUnique();
+
+                    b.ToTable("Keywords");
+                });
+
+            modelBuilder.Entity("MovieHub.Models.MyListItem", b =>
+                {
+                    b.Property<Guid>("ProfileId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("TitleId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("AddedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("ProfileId", "TitleId");
+
+                    b.HasIndex("TitleId");
+
+                    b.ToTable("MyListItems");
+                });
+
+            modelBuilder.Entity("MovieHub.Models.Person", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Biography")
+                        .HasColumnType("text");
+
+                    b.Property<DateOnly?>("Birthday")
+                        .HasColumnType("date");
+
+                    b.Property<DateOnly?>("Deathday")
+                        .HasColumnType("date");
+
+                    b.Property<DateTime?>("DetailsFetchedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("KnownForDepartment")
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("PlaceOfBirth")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
+
+                    b.Property<double>("Popularity")
+                        .HasColumnType("double precision");
+
+                    b.Property<string>("ProfileUrl")
+                        .HasColumnType("text");
+
+                    b.Property<string>("SearchName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<int>("TmdbId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SearchName");
+
+                    b.HasIndex("TmdbId")
+                        .IsUnique();
+
+                    b.ToTable("People");
+                });
+
+            modelBuilder.Entity("MovieHub.Models.Profile", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("AvatarKey")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsKids")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Language")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
+                    b.Property<string>("MaturityLimit")
+                        .IsRequired()
+                        .HasMaxLength(4)
+                        .HasColumnType("character varying(4)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Profiles");
+                });
+
+            modelBuilder.Entity("MovieHub.Models.Reaction", b =>
+                {
+                    b.Property<Guid>("ProfileId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("TitleId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Value")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
+                    b.HasKey("ProfileId", "TitleId");
+
+                    b.HasIndex("TitleId");
+
+                    b.ToTable("Reactions");
+                });
+
+            modelBuilder.Entity("MovieHub.Models.RefreshToken", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -264,38 +545,32 @@ namespace MovieHub.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("Description")
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ReplacedByHash")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("RevokedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("TokenHash")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
 
-                    b.Property<string>("ImagePath")
-                        .HasColumnType("text");
-
-                    b.Property<int>("ReleaseYear")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("Title")
+                    b.Property<string>("UserId")
                         .IsRequired()
                         .HasColumnType("text");
 
                     b.HasKey("Id");
 
-                    b.ToTable("Movies");
-                });
+                    b.HasIndex("TokenHash")
+                        .IsUnique();
 
-            modelBuilder.Entity("MovieHub.Models.MovieGenre", b =>
-                {
-                    b.Property<int>("MovieId")
-                        .HasColumnType("integer");
+                    b.HasIndex("UserId");
 
-                    b.Property<int>("GenreId")
-                        .HasColumnType("integer");
-
-                    b.HasKey("MovieId", "GenreId");
-
-                    b.HasIndex("GenreId");
-
-                    b.ToTable("MovieGenres");
+                    b.ToTable("RefreshTokens");
                 });
 
             modelBuilder.Entity("MovieHub.Models.Review", b =>
@@ -307,28 +582,315 @@ namespace MovieHub.Migrations
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Comment")
-                        .HasColumnType("text");
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)");
+
+                    b.Property<bool>("ContainsSpoilers")
+                        .HasColumnType("boolean");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int>("MovieId")
-                        .HasColumnType("integer");
+                    b.Property<Guid>("ProfileId")
+                        .HasColumnType("uuid");
 
                     b.Property<int>("Rating")
                         .HasColumnType("integer");
 
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasColumnType("text");
+                    b.Property<int>("TitleId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("MovieId");
+                    b.HasIndex("ProfileId", "TitleId")
+                        .IsUnique();
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("TitleId", "CreatedAt");
 
                     b.ToTable("Reviews");
+                });
+
+            modelBuilder.Entity("MovieHub.Models.Season", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateOnly?>("AirDate")
+                        .HasColumnType("date");
+
+                    b.Property<int>("EpisodeCount")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("Overview")
+                        .HasColumnType("text");
+
+                    b.Property<string>("PosterUrl")
+                        .HasColumnType("text");
+
+                    b.Property<int>("SeasonNumber")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("TitleId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TitleId", "SeasonNumber")
+                        .IsUnique();
+
+                    b.ToTable("Seasons");
+                });
+
+            modelBuilder.Entity("MovieHub.Models.Title", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AgeRating")
+                        .HasMaxLength(4)
+                        .HasColumnType("character varying(4)");
+
+                    b.Property<int?>("AgeRatingRank")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("BackdropUrl")
+                        .HasColumnType("text");
+
+                    b.Property<int?>("CollectionId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsFeatured")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("LogoUrl")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
+
+                    b.Property<int?>("NumberOfEpisodes")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("NumberOfSeasons")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("OriginalLanguage")
+                        .HasMaxLength(8)
+                        .HasColumnType("character varying(8)");
+
+                    b.Property<string>("OriginalName")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
+
+                    b.Property<string>("Overview")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<double>("Popularity")
+                        .HasColumnType("double precision");
+
+                    b.Property<string>("PosterUrl")
+                        .HasColumnType("text");
+
+                    b.Property<DateOnly?>("ReleaseDate")
+                        .HasColumnType("date");
+
+                    b.Property<int?>("RuntimeMinutes")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("SearchText")
+                        .IsRequired()
+                        .HasMaxLength(700)
+                        .HasColumnType("character varying(700)");
+
+                    b.Property<string>("Status")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("Tagline")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<int?>("TmdbId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("TrailerKey")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<double>("VoteAverage")
+                        .HasColumnType("double precision");
+
+                    b.Property<int>("VoteCount")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("Year")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CollectionId");
+
+                    b.HasIndex("Popularity");
+
+                    b.HasIndex("ReleaseDate");
+
+                    b.HasIndex("SearchText");
+
+                    b.HasIndex("Type");
+
+                    b.HasIndex("TmdbId", "Type")
+                        .IsUnique();
+
+                    b.ToTable("Titles");
+                });
+
+            modelBuilder.Entity("MovieHub.Models.TitleGenre", b =>
+                {
+                    b.Property<int>("TitleId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("GenreId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("TitleId", "GenreId");
+
+                    b.HasIndex("GenreId");
+
+                    b.ToTable("TitleGenres");
+                });
+
+            modelBuilder.Entity("MovieHub.Models.TitleKeyword", b =>
+                {
+                    b.Property<int>("TitleId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("KeywordId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("TitleId", "KeywordId");
+
+                    b.HasIndex("KeywordId");
+
+                    b.ToTable("TitleKeywords");
+                });
+
+            modelBuilder.Entity("MovieHub.Models.TitleProvider", b =>
+                {
+                    b.Property<int>("TitleId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("ProviderId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Kind")
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
+                    b.HasKey("TitleId", "ProviderId", "Kind");
+
+                    b.HasIndex("ProviderId");
+
+                    b.ToTable("TitleProviders");
+                });
+
+            modelBuilder.Entity("MovieHub.Models.WatchProgress", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("Completed")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("DurationSeconds")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("EpisodeId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("PositionSeconds")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("ProfileId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("TitleId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EpisodeId");
+
+                    b.HasIndex("TitleId");
+
+                    b.HasIndex("ProfileId", "UpdatedAt");
+
+                    b.HasIndex("ProfileId", "TitleId", "EpisodeId");
+
+                    b.ToTable("WatchProgress");
+                });
+
+            modelBuilder.Entity("MovieHub.Models.WatchProvider", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("DisplayPriority")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("LogoUrl")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<int>("TmdbId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TmdbId")
+                        .IsUnique();
+
+                    b.ToTable("WatchProviders");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -382,75 +944,280 @@ namespace MovieHub.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("MovieHub.Models.Favorite", b =>
+            modelBuilder.Entity("MovieHub.Models.Credit", b =>
                 {
-                    b.HasOne("MovieHub.Models.Movie", "Movie")
-                        .WithMany("Favorites")
-                        .HasForeignKey("MovieId")
+                    b.HasOne("MovieHub.Models.Person", "Person")
+                        .WithMany("Credits")
+                        .HasForeignKey("PersonId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("MovieHub.Models.ApplicationUser", "User")
+                    b.HasOne("MovieHub.Models.Title", "Title")
+                        .WithMany("Credits")
+                        .HasForeignKey("TitleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Person");
+
+                    b.Navigation("Title");
+                });
+
+            modelBuilder.Entity("MovieHub.Models.Episode", b =>
+                {
+                    b.HasOne("MovieHub.Models.Season", "Season")
+                        .WithMany("Episodes")
+                        .HasForeignKey("SeasonId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Season");
+                });
+
+            modelBuilder.Entity("MovieHub.Models.MyListItem", b =>
+                {
+                    b.HasOne("MovieHub.Models.Profile", "Profile")
+                        .WithMany("MyList")
+                        .HasForeignKey("ProfileId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("MovieHub.Models.Title", "Title")
                         .WithMany()
+                        .HasForeignKey("TitleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Profile");
+
+                    b.Navigation("Title");
+                });
+
+            modelBuilder.Entity("MovieHub.Models.Profile", b =>
+                {
+                    b.HasOne("MovieHub.Models.ApplicationUser", "User")
+                        .WithMany("Profiles")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Movie");
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("MovieHub.Models.Reaction", b =>
+                {
+                    b.HasOne("MovieHub.Models.Profile", "Profile")
+                        .WithMany("Reactions")
+                        .HasForeignKey("ProfileId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("MovieHub.Models.Title", "Title")
+                        .WithMany()
+                        .HasForeignKey("TitleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Profile");
+
+                    b.Navigation("Title");
+                });
+
+            modelBuilder.Entity("MovieHub.Models.RefreshToken", b =>
+                {
+                    b.HasOne("MovieHub.Models.ApplicationUser", "User")
+                        .WithMany("RefreshTokens")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("MovieHub.Models.MovieGenre", b =>
+            modelBuilder.Entity("MovieHub.Models.Review", b =>
+                {
+                    b.HasOne("MovieHub.Models.Profile", "Profile")
+                        .WithMany("Reviews")
+                        .HasForeignKey("ProfileId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("MovieHub.Models.Title", "Title")
+                        .WithMany("Reviews")
+                        .HasForeignKey("TitleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Profile");
+
+                    b.Navigation("Title");
+                });
+
+            modelBuilder.Entity("MovieHub.Models.Season", b =>
+                {
+                    b.HasOne("MovieHub.Models.Title", "Title")
+                        .WithMany("Seasons")
+                        .HasForeignKey("TitleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Title");
+                });
+
+            modelBuilder.Entity("MovieHub.Models.Title", b =>
+                {
+                    b.HasOne("MovieHub.Models.Collection", "Collection")
+                        .WithMany("Titles")
+                        .HasForeignKey("CollectionId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Collection");
+                });
+
+            modelBuilder.Entity("MovieHub.Models.TitleGenre", b =>
                 {
                     b.HasOne("MovieHub.Models.Genre", "Genre")
-                        .WithMany("MovieGenres")
+                        .WithMany("TitleGenres")
                         .HasForeignKey("GenreId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("MovieHub.Models.Movie", "Movie")
-                        .WithMany("MovieGenres")
-                        .HasForeignKey("MovieId")
+                    b.HasOne("MovieHub.Models.Title", "Title")
+                        .WithMany("TitleGenres")
+                        .HasForeignKey("TitleId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Genre");
 
-                    b.Navigation("Movie");
+                    b.Navigation("Title");
                 });
 
-            modelBuilder.Entity("MovieHub.Models.Review", b =>
+            modelBuilder.Entity("MovieHub.Models.TitleKeyword", b =>
                 {
-                    b.HasOne("MovieHub.Models.Movie", "Movie")
-                        .WithMany("Reviews")
-                        .HasForeignKey("MovieId")
+                    b.HasOne("MovieHub.Models.Keyword", "Keyword")
+                        .WithMany("TitleKeywords")
+                        .HasForeignKey("KeywordId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("MovieHub.Models.ApplicationUser", "User")
+                    b.HasOne("MovieHub.Models.Title", "Title")
+                        .WithMany("TitleKeywords")
+                        .HasForeignKey("TitleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Keyword");
+
+                    b.Navigation("Title");
+                });
+
+            modelBuilder.Entity("MovieHub.Models.TitleProvider", b =>
+                {
+                    b.HasOne("MovieHub.Models.WatchProvider", "Provider")
+                        .WithMany("TitleProviders")
+                        .HasForeignKey("ProviderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("MovieHub.Models.Title", "Title")
+                        .WithMany("TitleProviders")
+                        .HasForeignKey("TitleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Provider");
+
+                    b.Navigation("Title");
+                });
+
+            modelBuilder.Entity("MovieHub.Models.WatchProgress", b =>
+                {
+                    b.HasOne("MovieHub.Models.Episode", "Episode")
                         .WithMany()
-                        .HasForeignKey("UserId")
+                        .HasForeignKey("EpisodeId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.HasOne("MovieHub.Models.Profile", "Profile")
+                        .WithMany("Progress")
+                        .HasForeignKey("ProfileId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Movie");
+                    b.HasOne("MovieHub.Models.Title", "Title")
+                        .WithMany()
+                        .HasForeignKey("TitleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
-                    b.Navigation("User");
+                    b.Navigation("Episode");
+
+                    b.Navigation("Profile");
+
+                    b.Navigation("Title");
+                });
+
+            modelBuilder.Entity("MovieHub.Models.ApplicationUser", b =>
+                {
+                    b.Navigation("Profiles");
+
+                    b.Navigation("RefreshTokens");
+                });
+
+            modelBuilder.Entity("MovieHub.Models.Collection", b =>
+                {
+                    b.Navigation("Titles");
                 });
 
             modelBuilder.Entity("MovieHub.Models.Genre", b =>
                 {
-                    b.Navigation("MovieGenres");
+                    b.Navigation("TitleGenres");
                 });
 
-            modelBuilder.Entity("MovieHub.Models.Movie", b =>
+            modelBuilder.Entity("MovieHub.Models.Keyword", b =>
                 {
-                    b.Navigation("Favorites");
+                    b.Navigation("TitleKeywords");
+                });
 
-                    b.Navigation("MovieGenres");
+            modelBuilder.Entity("MovieHub.Models.Person", b =>
+                {
+                    b.Navigation("Credits");
+                });
+
+            modelBuilder.Entity("MovieHub.Models.Profile", b =>
+                {
+                    b.Navigation("MyList");
+
+                    b.Navigation("Progress");
+
+                    b.Navigation("Reactions");
 
                     b.Navigation("Reviews");
+                });
+
+            modelBuilder.Entity("MovieHub.Models.Season", b =>
+                {
+                    b.Navigation("Episodes");
+                });
+
+            modelBuilder.Entity("MovieHub.Models.Title", b =>
+                {
+                    b.Navigation("Credits");
+
+                    b.Navigation("Reviews");
+
+                    b.Navigation("Seasons");
+
+                    b.Navigation("TitleGenres");
+
+                    b.Navigation("TitleKeywords");
+
+                    b.Navigation("TitleProviders");
+                });
+
+            modelBuilder.Entity("MovieHub.Models.WatchProvider", b =>
+                {
+                    b.Navigation("TitleProviders");
                 });
 #pragma warning restore 612, 618
         }

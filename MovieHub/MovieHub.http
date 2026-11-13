@@ -1,6 +1,0 @@
-@MovieHub_HostAddress = http://localhost:5085
-
-GET {{MovieHub_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###
