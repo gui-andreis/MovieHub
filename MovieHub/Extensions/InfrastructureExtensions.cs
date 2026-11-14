@@ -91,9 +91,15 @@ public static class InfrastructureExtensions
         sb.Append($"Database={uri.AbsolutePath.Trim('/')};");
         sb.Append($"Username={Uri.UnescapeDataString(userInfo[0])};");
         if (userInfo.Length > 1) sb.Append($"Password={Uri.UnescapeDataString(userInfo[1])};");
-        sb.Append(string.IsNullOrEmpty(sslMode) || sslMode.Equals("disable", StringComparison.OrdinalIgnoreCase)
-            ? (uri.Host is "localhost" or "127.0.0.1" ? "SSL Mode=Disable;" : "SSL Mode=Require;")
-            : "SSL Mode=Require;");
+        // Respeita o sslmode da URL (Neon manda sslmode=require); sem ele, tenta SSL e cai para texto puro
+        var ssl = sslMode?.ToLowerInvariant() switch
+        {
+            "disable" => "Disable",
+            "allow" => "Allow",
+            "require" or "verify-ca" or "verify-full" => "Require",
+            _ => "Prefer"
+        };
+        sb.Append($"SSL Mode={ssl};");
         sb.Append("Trust Server Certificate=true;");
         sb.Append("Maximum Pool Size=20;");
         return sb.ToString();

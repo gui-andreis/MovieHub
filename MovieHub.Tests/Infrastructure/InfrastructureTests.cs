@@ -20,6 +20,12 @@ public class InfrastructureTests
             .And.Contain("SSL Mode=Require;");
     }
 
+    [Theory]
+    [InlineData("postgres://u:p@db.internal:5432/app", "SSL Mode=Prefer;")]
+    [InlineData("postgres://u:p@db.internal:5432/app?sslmode=disable", "SSL Mode=Disable;")]
+    public void DatabaseUrl_RespectsSslMode(string url, string expected)
+        => InfrastructureExtensions.ConvertDatabaseUrl(url).Should().Contain(expected);
+
     [Fact]
     public void NpgsqlConnectionString_IsKeptAsIs()
     {
