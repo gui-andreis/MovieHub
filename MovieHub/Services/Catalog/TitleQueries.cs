@@ -16,6 +16,8 @@ public static class TitleQueries
         Type = t.Type,
         Name = t.Name,
         Year = t.Year,
+        ReleaseDate = t.ReleaseDate,
+        IsFeatured = t.IsFeatured,
         PosterUrl = t.PosterUrl,
         BackdropUrl = t.BackdropUrl,
         LogoUrl = t.LogoUrl,
@@ -36,6 +38,8 @@ public static class TitleQueries
         Type = t.Type,
         Name = t.Name,
         Year = t.Year,
+        ReleaseDate = t.ReleaseDate,
+        IsFeatured = t.IsFeatured,
         PosterUrl = t.PosterUrl,
         BackdropUrl = t.BackdropUrl,
         LogoUrl = t.LogoUrl,
@@ -108,6 +112,8 @@ public class TitleQueryParameters
     public string? ProviderIds { get; set; }
     public string? MaxAgeRating { get; set; }
     public string? Language { get; set; }
+    public int? MinRuntime { get; set; }
+    public int? MaxRuntime { get; set; }
 
     /// <summary>popularity (padrão) | rating | release_desc | release_asc | name | added</summary>
     public string? Sort { get; set; }

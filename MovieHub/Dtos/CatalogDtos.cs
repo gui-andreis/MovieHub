@@ -9,6 +9,7 @@ public class TitleCardDto
     public TitleType Type { get; set; }
     public string Name { get; set; } = string.Empty;
     public int? Year { get; set; }
+    public DateOnly? ReleaseDate { get; set; }
     public string? PosterUrl { get; set; }
     public string? BackdropUrl { get; set; }
     public string? LogoUrl { get; set; }
@@ -19,6 +20,7 @@ public class TitleCardDto
     public List<string> Genres { get; set; } = new();
     public string? TrailerKey { get; set; }
     public string Overview { get; set; } = string.Empty;
+    public bool IsFeatured { get; set; }
 }
 
 public class HeroDto : TitleCardDto

@@ -170,7 +170,7 @@ Todas as respostas usam o envelope `{ "status": 200, "message": "…", "data": �
 | Método | Rota | Descrição |
 |---|---|---|
 | GET | `/browse/home?type=all\|movie\|series` | Hero e linhas: continuar assistindo, minha lista, Top 10, em alta, "Porque você curtiu X", lançamentos, aclamados, gêneros, sagas, escondidos que valem a pena |
-| GET | `/titles` | Filtros: `q`, `type`, `genreIds`, `yearFrom`, `yearTo`, `minRating`, `providerIds`, `maxAgeRating`, `language`, `sort` (`popularity`\|`rating`\|`release_desc`\|`release_asc`\|`name`\|`added`), `page`, `pageSize` (≤ 50) |
+| GET | `/titles` | Filtros: `q`, `type`, `genreIds`, `yearFrom`, `yearTo`, `minRating`, `minRuntime`, `maxRuntime`, `providerIds`, `maxAgeRating`, `language`, `sort` (`popularity`\|`rating`\|`release_desc`\|`release_asc`\|`name`\|`added`), `page`, `pageSize` (≤ 50) |
 | GET | `/titles/{id}` | Detalhe completo: elenco, equipe, onde assistir, temporadas, saga, nota interna e bloco `me` |
 | GET | `/titles/{id}/similar?limit=12` | Parecidos (gêneros, palavras-chave e saga) |
 | GET | `/titles/{id}/seasons/{n}` | Episódios (+ progresso por episódio) |

@@ -7,6 +7,7 @@ using MovieHub.Data;
 namespace MovieHub.Services.Tmdb;
 
 public record ImportStatusDto(
+    bool IsRunning,
     string State,
     string? Source,
     DateTime? StartedAt,
@@ -77,7 +78,7 @@ public class ImportStatusTracker
     {
         lock (_sync)
         {
-            return new ImportStatusDto(_state, _source, _startedAt, _finishedAt, _total,
+            return new ImportStatusDto(_state is "queued" or "running", _state, _source, _startedAt, _finishedAt, _total,
                 _imported + _skipped + _failed, _imported, _skipped, _failed, _message, _lastError, TmdbConfigured);
         }
     }

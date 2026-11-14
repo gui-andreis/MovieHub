@@ -63,6 +63,8 @@ public class CatalogService : ICatalogService
         if (p.YearFrom.HasValue) query = query.Where(t => t.Year >= p.YearFrom);
         if (p.YearTo.HasValue) query = query.Where(t => t.Year <= p.YearTo);
         if (p.MinRating.HasValue) query = query.Where(t => t.VoteAverage >= p.MinRating);
+        if (p.MinRuntime.HasValue) query = query.Where(t => t.RuntimeMinutes >= p.MinRuntime);
+        if (p.MaxRuntime.HasValue) query = query.Where(t => t.RuntimeMinutes <= p.MaxRuntime);
         if (!string.IsNullOrWhiteSpace(p.Language))
         {
             var lang = p.Language.Trim().ToLowerInvariant();

@@ -148,4 +148,20 @@ public class CatalogServiceTests
         var titles = await service.SearchAsync("duna", default);
         titles.Titles.Should().ContainSingle();
     }
+
+    [Fact]
+    public async Task List_FiltersByRuntime()
+    {
+        var db = TestDbContextFactory.Create();
+        var titles = await Seed.CatalogAsync(db);
+        titles[0].RuntimeMinutes = 166;
+        titles[1].RuntimeMinutes = 90;
+        await db.SaveChangesAsync();
+        var service = new CatalogService(db, new FakeCurrentProfile());
+
+        var result = await service.ListAsync(new TitleQueryParameters { MinRuntime = 60, MaxRuntime = 120 }, default);
+
+        result.Items.Should().ContainSingle(t => t.Id == titles[1].Id);
+        result.Items[0].ReleaseDate.Should().Be(new DateOnly(1995, 1, 1));
+    }
 }
