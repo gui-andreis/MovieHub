@@ -459,11 +459,18 @@ public class CatalogService : ICatalogService
 
     public async Task<List<ProviderDto>> GetProvidersAsync(CancellationToken ct)
     {
-        return await _db.WatchProviders.AsNoTracking()
-            .Select(p => new ProviderDto(p.Id, p.Name, p.LogoUrl,
-                p.TitleProviders.Select(tp => tp.TitleId).Distinct().Count()))
+        // Um título pode aparecer como stream e aluguel no mesmo provedor: conta títulos distintos
+        var pairs = await _db.TitleProviders.AsNoTracking()
+            .Select(tp => new { tp.ProviderId, tp.TitleId })
+            .Distinct()
+            .ToListAsync(ct);
+        var counts = pairs.GroupBy(p => p.ProviderId).ToDictionary(g => g.Key, g => g.Count());
+
+        var providers = await _db.WatchProviders.AsNoTracking().ToListAsync(ct);
+        return providers
+            .Select(p => new ProviderDto(p.Id, p.Name, p.LogoUrl, counts.GetValueOrDefault(p.Id)))
             .OrderByDescending(p => p.TitleCount)
             .ThenBy(p => p.Name)
-            .ToListAsync(ct);
+            .ToList();
     }
 }

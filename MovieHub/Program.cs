@@ -54,7 +54,7 @@ try
     await app.SeedRolesAndAdminAsync();
 
     app.UseForwardedHeaders();
-    app.UseMiddleware<ExceptionMiddleware>();
+    // O log de requisição fica por fora do middleware de exceções para registrar o status final
     app.UseSerilogRequestLogging(o =>
     {
         o.MessageTemplate = "HTTP {RequestMethod} {RequestPath} → {StatusCode} em {Elapsed:0} ms";
@@ -62,6 +62,7 @@ try
             ? LogEventLevel.Error
             : http.Request.Path.StartsWithSegments("/health") ? LogEventLevel.Verbose : LogEventLevel.Information;
     });
+    app.UseMiddleware<ExceptionMiddleware>();
     app.UseResponseCompression();
 
     app.UseSwagger();
